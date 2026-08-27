@@ -1,7 +1,12 @@
+import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// In local dev, use localhost or LAN IP. Default to web port 3000
-export const API_BASE_URL = "http://localhost:3000/api/mobile";
+// Automatically use LAN IP on physical phones so it can connect to local server
+export const DEV_LAN_IP = "192.168.1.9";
+export const API_BASE_URL =
+  Platform.OS === "web"
+    ? "http://localhost:3000/api/mobile"
+    : `http://${DEV_LAN_IP}:3000/api/mobile`;
 const TOKEN_STORAGE_KEY = "@campus_staff_auth_token";
 const USER_STORAGE_KEY = "@campus_staff_user";
 
