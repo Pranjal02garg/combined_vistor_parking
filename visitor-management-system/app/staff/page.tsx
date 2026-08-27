@@ -1,10 +1,31 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { signIn, useSession, signOut } from "next-auth/react";
-import Link from "next/link";
-import GoogleIcon from "@/components/GoogleIcon";
+import { useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import QRCode from "qrcode";
+import Link from "next/link";
+import {
+  Car,
+  QrCode,
+  UserCheck,
+  AlertOctagon,
+  LogOut,
+  ArrowLeft,
+  Plus,
+  Copy,
+  Check,
+  Share2,
+  Phone,
+  Trash2,
+  Loader2,
+  ShieldCheck,
+  FileText,
+  Clock,
+  Home,
+  User,
+} from "lucide-react";
+import StaffParkingSection from "@/components/StaffParkingSection";
 import {
   fetchMyVIPPasses,
   createVIPPass,
@@ -16,61 +37,34 @@ import {
   VIPDTO,
   HouseHelpDTO,
   IncidentDTO,
-  ApiError,
 } from "@/lib/api";
-import QRCode from "qrcode";
-import {
-  Loader2,
-  QrCode,
-  ShieldCheck,
-  Plus,
-  LogOut,
-  Calendar,
-  User,
-  Phone,
-  FileText,
-  Car,
-  Check,
-  X,
-  Clock,
-  ArrowLeft,
-  UserCheck,
-  AlertOctagon,
-  Power,
-  Edit2,
-  Sparkles,
-  Lock,
-  MessageCircle,
-  Trash2,
-  Share2,
-  Copy,
-  Download,
-  AlertCircle,
-  Building,
-  CheckCircle2,
-} from "lucide-react";
+
+type StaffTab = "parking" | "guests" | "house_helps" | "notices";
 
 export default function StaffPage() {
-  const { status, data: session } = useSession();
+  const { data: session, status } = useSession();
 
   if (status === "loading") {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-slate-900 text-slate-400">
-        <Loader2 className="animate-spin text-blue-500" size={32} />
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3">
+        <Loader2 className="animate-spin text-slate-400" size={32} />
+        <p className="text-xs text-slate-400 font-medium">Authenticating Staff Portal...</p>
       </div>
     );
   }
 
-  if (status !== "authenticated" || (session?.user?.role !== "STAFF" && session?.user?.role !== "HEAD")) {
+  if (status === "unauthenticated" || !session?.user) {
     return <StaffLoginPage />;
   }
 
-  return <StaffConsole userName={session?.user?.name || "Staff Member"} userEmail={session?.user?.email || ""} />;
+  return <StaffConsole userName={session.user.name || "Faculty Member"} />;
 }
 
-function StaffConsole({ userName, userEmail }: { userName: string; userEmail: string }) {
+function StaffConsole({ userName }: { userName: string }) {
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<"guests" | "house_helps" | "notices">("guests");
+  const [activeTab, setActiveTab] = useState<StaffTab>("parking");
+
+  // Modals state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showAddHelpModal, setShowAddHelpModal] = useState(false);
   const [selectedPassForQR, setSelectedPassForQR] = useState<VIPDTO | null>(null);
@@ -78,27 +72,22 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Guest passes query
+  // Queries
   const passesQuery = useQuery({
     queryKey: ["my-vip-passes"],
     queryFn: fetchMyVIPPasses,
-    refetchInterval: 10_000,
   });
   const passes = passesQuery.data?.items ?? [];
 
-  // House helps query
   const helpsQuery = useQuery({
     queryKey: ["my-house-helps"],
     queryFn: fetchStaffHouseHelps,
-    refetchInterval: 10_000,
   });
   const helps = helpsQuery.data?.items ?? [];
 
-  // Security notices query
   const noticesQuery = useQuery({
-    queryKey: ["my-incidents"],
+    queryKey: ["my-notices"],
     queryFn: () => fetchIncidents(true),
-    refetchInterval: 10_000,
   });
   const notices = noticesQuery.data?.items ?? [];
 
@@ -111,21 +100,33 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
     },
   });
 
-  // Helper QR generator
+  // Delete / Unlink helper
+  const deleteHelpMut = useMutation({
+    mutationFn: (id: string) => deleteStaffHouseHelp(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
+    },
+  });
+
+  // QR code generator
   useEffect(() => {
     if (selectedPassForQR) {
-      QRCode.toDataURL(selectedPassForQR.token, { width: 300, margin: 2 }).then(setQrDataUrl);
+      QRCode.toDataURL(selectedPassForQR.token, { width: 300, margin: 2 })
+        .then(setQrDataUrl)
+        .catch(() => setQrDataUrl(null));
     } else if (selectedHelpForQR) {
-      QRCode.toDataURL(selectedHelpForQR.token, { width: 300, margin: 2 }).then(setQrDataUrl);
+      QRCode.toDataURL(selectedHelpForQR.token, { width: 300, margin: 2 })
+        .then(setQrDataUrl)
+        .catch(() => setQrDataUrl(null));
     } else {
       setQrDataUrl(null);
     }
   }, [selectedPassForQR, selectedHelpForQR]);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 font-sans antialiased flex flex-col pb-16">
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col pb-16">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-md">
+      <header className="sticky top-0 z-30 bg-slate-900 border-b border-slate-800 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link
@@ -136,19 +137,19 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
             </Link>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base sm:text-lg text-white tracking-tight">Thapar Gate Pass</span>
-                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded-full">
+                <span className="font-bold text-base text-white tracking-tight">Thapar Faculty Portal</span>
+                <span className="px-2 py-0.5 text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 rounded-md">
                   Staff Console
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Welcome, {userName}</p>
+              <p className="text-xs text-slate-400">{userName}</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors"
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors"
             >
               <LogOut size={14} />
               <span className="hidden sm:inline">Sign Out</span>
@@ -157,11 +158,12 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
         </div>
 
         {/* Tab switcher */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 border-t border-slate-800/60 flex space-x-2 py-2 overflow-x-auto no-scrollbar">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 border-t border-slate-800 flex space-x-1.5 py-2 overflow-x-auto no-scrollbar">
           {[
-            { id: "guests", label: "VIP Guest Passes", icon: QrCode, badge: passes.length },
-            { id: "house_helps", label: "Domestic Staff / Helps", icon: UserCheck, badge: helps.length },
-            { id: "notices", label: "Security & Resident Alerts", icon: AlertOctagon, badge: notices.length },
+            { id: "parking", label: "Parking & Access", icon: Car },
+            { id: "guests", label: "Guest Passes", icon: QrCode, badge: passes.length },
+            { id: "house_helps", label: "Domestic Staff", icon: UserCheck, badge: helps.length },
+            { id: "notices", label: "Campus Notices", icon: AlertOctagon, badge: notices.length },
           ].map((tab) => {
             const Icon = tab.icon;
             const active = activeTab === tab.id;
@@ -169,18 +171,18 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all whitespace-nowrap ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap ${
                   active
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/30"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/60"
+                    ? "bg-slate-800 text-white border border-slate-700 shadow-sm"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900"
                 }`}
               >
-                <Icon size={16} />
+                <Icon size={15} />
                 <span>{tab.label}</span>
                 {tab.badge !== undefined && tab.badge > 0 && (
                   <span
                     className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                      active ? "bg-white text-blue-600" : "bg-slate-800 text-slate-300"
+                      active ? "bg-white text-slate-900" : "bg-slate-800 text-slate-400"
                     }`}
                   >
                     {tab.badge}
@@ -194,44 +196,45 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
 
       {/* Main Content */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
-        {/* TAB 1: VIP GUEST PASSES */}
+        {/* TAB 0: PARKING & ACCESS */}
+        {activeTab === "parking" && <StaffParkingSection userName={userName} />}
+
+        {/* TAB 1: GUEST PASSES */}
         {activeTab === "guests" && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-black text-white tracking-tight">Issued VIP Guest Passes</h1>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Issue and track digital entry QR passes for your academic guests, examiners, and personal visitors.
-                </p>
+                <h1 className="text-xl font-bold text-white tracking-tight">Visitor &amp; Guest Passes</h1>
+                <p className="text-xs text-slate-400">Pre-authorized digital gate passes for campus visitors and academic guests.</p>
               </div>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-blue-600/30 self-start transition-all"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm"
               >
-                <Plus size={16} />
-                <span>+ Issue VIP Pass</span>
+                <Plus size={15} />
+                <span>+ Issue Guest Pass</span>
               </button>
             </div>
 
             {passesQuery.isLoading ? (
               <div className="py-20 text-center text-slate-400 flex flex-col items-center gap-3">
-                <Loader2 className="animate-spin text-blue-500" size={32} />
-                <p className="text-xs">Loading guest passes...</p>
+                <Loader2 className="animate-spin text-slate-500" size={28} />
+                <p className="text-xs">Loading passes...</p>
               </div>
             ) : passes.length === 0 ? (
-              <div className="bg-slate-950/60 border border-slate-800 rounded-3xl p-12 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-3xl mx-auto mb-4 font-black">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
+                <div className="w-12 h-12 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-3">
                   🎫
                 </div>
-                <h3 className="text-lg font-bold text-white">No Guest Passes Created Yet</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1.5 mb-5">
-                  Generate digital gate passes for campus visitors. Guests can show the QR code directly at Gates 1–4.
+                <h3 className="text-base font-bold text-white">No Guest Passes Created</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
+                  Generate digital gate passes for campus visitors. Visitors scan the QR code at Gates 1–4.
                 </p>
                 <button
                   onClick={() => setShowCreateModal(true)}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold"
                 >
-                  + Issue Your First Guest Pass
+                  + Issue First Pass
                 </button>
               </div>
             ) : (
@@ -244,30 +247,35 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
                   return (
                     <div
                       key={p.id}
-                      className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-all relative overflow-hidden"
+                      className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-slate-700 transition-all"
                     >
                       <div>
-                        <div className="flex items-center justify-between mb-3">
-                          <span
-                            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
-                              isCheckedIn
-                                ? "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                                : isApproved
-                                ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                                : isExited
-                                ? "bg-slate-800 text-slate-400 border-slate-700"
-                                : "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                            }`}
-                          >
-                            ● {p.status}
-                          </span>
-                          <span className="text-[11px] text-slate-500">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                                isCheckedIn
+                                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                                  : isApproved
+                                  ? "bg-slate-800 text-slate-300 border-slate-700"
+                                  : isExited
+                                  ? "bg-slate-800/60 text-slate-500 border-slate-800"
+                                  : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                              }`}
+                            >
+                              ● {p.status}
+                            </span>
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 uppercase font-mono">
+                              {p.tier || "VIP"}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-slate-500 font-mono">
                             {new Date(p.createdAt).toLocaleDateString()}
                           </span>
                         </div>
 
-                        <h3 className="text-lg font-bold text-white leading-snug">{p.guestName}</h3>
-                        <p className="text-xs text-slate-300 font-medium mt-1">{p.purpose}</p>
+                        <h3 className="text-base font-bold text-white leading-snug">{p.guestName}</h3>
+                        <p className="text-xs text-slate-400 mt-0.5">{p.purpose}</p>
 
                         <div className="mt-3.5 space-y-1.5 text-xs text-slate-400 border-t border-slate-800/60 pt-3">
                           {p.guestPhone && (
@@ -278,39 +286,57 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
                           )}
                           {p.vehicleNumber && (
                             <div className="flex items-center gap-1.5">
-                              <Car size={12} className="text-blue-400" />
+                              <Car size={12} className="text-slate-400" />
                               <span>Vehicle: <strong className="text-white font-mono">{p.vehicleNumber}</strong></span>
                             </div>
                           )}
+                          <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
+                            <FileText size={11} className="text-slate-500" />
+                            <span>Type: <strong className="text-slate-300 font-semibold">{p.visitType || "OFFICIAL"}</strong></span>
+                          </div>
                           {p.entryGateCode && (
-                            <div className="text-[11px] text-emerald-400">
-                              Entered Gate {p.entryGateCode} at {p.enteredAt ? new Date(p.enteredAt).toLocaleTimeString() : ""}
+                            <div className="text-[11px] text-emerald-400 font-semibold">
+                              Gate {p.entryGateCode} • {p.enteredAt ? new Date(p.enteredAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ""}
                             </div>
                           )}
                         </div>
                       </div>
 
-                      <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between gap-2">
+                      <div className="mt-5 pt-3 border-t border-slate-800 flex items-center gap-2">
                         <button
                           onClick={() => setSelectedPassForQR(p)}
-                          className="flex-1 py-2 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-bold flex items-center justify-center gap-1.5 border border-blue-500/30 transition-all"
+                          className="flex-1 py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition-colors"
                         >
                           <QrCode size={14} />
-                          <span>View QR</span>
+                          <span>QR Pass</span>
                         </button>
 
                         <button
                           onClick={() => {
                             const shareUrl = `${window.location.origin}/vip/${p.token}`;
-                            const msg = `Hello ${p.guestName}, here is your Official Campus Gate Pass for Thapar University: ${shareUrl}`;
-                            window.open(`https://wa.me/${p.guestPhone?.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`, "_blank");
+                            navigator.clipboard.writeText(shareUrl);
+                            setCopiedId(p.id);
+                            setTimeout(() => setCopiedId(null), 3000);
                           }}
-                          className="py-2 px-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 text-xs font-bold flex items-center gap-1.5 border border-emerald-500/30 transition-all"
-                          title="Share on WhatsApp"
+                          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition-colors"
+                          title="Copy Link"
                         >
-                          <Share2 size={14} />
-                          <span>WhatsApp</span>
+                          {copiedId === p.id ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                         </button>
+
+                        {p.guestPhone && (
+                          <button
+                            onClick={() => {
+                              const shareUrl = `${window.location.origin}/vip/${p.token}`;
+                              const msg = `Campus Gate Pass for Thapar University: ${shareUrl}`;
+                              window.open(`https://wa.me/${p.guestPhone?.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`, "_blank");
+                            }}
+                            className="p-2 rounded-xl bg-slate-800 hover:bg-emerald-600 hover:text-white text-slate-400 border border-slate-700 transition-colors"
+                            title="Share on WhatsApp"
+                          >
+                            <Share2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
@@ -320,44 +346,42 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
           </div>
         )}
 
-        {/* TAB 2: HOUSE HELPS */}
+        {/* TAB 2: DOMESTIC STAFF */}
         {activeTab === "house_helps" && (
           <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-black text-white tracking-tight">Domestic Staff Clearance</h1>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Manage registered domestic staff (maids, cooks, drivers) authorized to enter residential quarters.
-                </p>
+                <h1 className="text-xl font-bold text-white tracking-tight">Domestic Staff Clearance</h1>
+                <p className="text-xs text-slate-400">Manage digital entry clearance and verified ID proofs for household staff and drivers.</p>
               </div>
               <button
                 onClick={() => setShowAddHelpModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-blue-600/30 self-start transition-all"
+                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm"
               >
-                <Plus size={16} />
+                <Plus size={15} />
                 <span>+ Register Domestic Staff</span>
               </button>
             </div>
 
             {helpsQuery.isLoading ? (
               <div className="py-20 text-center text-slate-400 flex flex-col items-center gap-3">
-                <Loader2 className="animate-spin text-blue-500" size={32} />
+                <Loader2 className="animate-spin text-slate-500" size={28} />
                 <p className="text-xs">Loading domestic staff...</p>
               </div>
             ) : helps.length === 0 ? (
-              <div className="bg-slate-950/60 border border-slate-800 rounded-3xl p-12 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-3xl mx-auto mb-4 font-black">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
+                <div className="w-12 h-12 rounded-xl bg-slate-800 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-3">
                   🧹
                 </div>
-                <h3 className="text-lg font-bold text-white">No Domestic Staff Registered</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1.5 mb-5">
-                  Register your household staff to grant them verified digital security entry at campus gates.
+                <h3 className="text-base font-bold text-white">No Domestic Staff Registered</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
+                  Register maids, cooks, and drivers for digital gate entry into campus residences with ID proofs.
                 </p>
                 <button
                   onClick={() => setShowAddHelpModal(true)}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
+                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold"
                 >
-                  + Register First Helper
+                  + Register Domestic Staff
                 </button>
               </div>
             ) : (
@@ -365,27 +389,42 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
                 {helps.map((h) => (
                   <div
                     key={h.id}
-                    className="bg-slate-950/80 border border-slate-800/80 rounded-2xl p-5 shadow-lg flex flex-col justify-between hover:border-slate-700 transition-all"
+                    className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-slate-700 transition-all"
                   >
                     <div>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
                           {h.serviceType}
                         </span>
-                        <span className="text-xs font-bold text-slate-300">{h.quarterNumber}</span>
+                        <span className="text-xs font-semibold text-slate-400">{h.quarterNumber}</span>
                       </div>
 
-                      <h3 className="text-lg font-bold text-white">{h.name}</h3>
-                      <p className="text-xs text-slate-400 mt-1">📞 {h.phone}</p>
-                      {h.workShift && (
-                        <p className="text-xs text-blue-300 mt-1 font-medium">⏰ Shift: {h.workShift}</p>
-                      )}
+                      <h3 className="text-base font-bold text-white">{h.name}</h3>
+                      <p className="text-xs text-slate-400 mt-0.5 font-mono">📞 {h.phone}</p>
+
+                      {/* ID Proof & Shift Section */}
+                      <div className="mt-3 pt-2.5 border-t border-slate-800/60 space-y-1 text-xs text-slate-400">
+                        {h.idProofNumber && (
+                          <div className="flex items-center gap-1.5">
+                            <ShieldCheck size={13} className="text-emerald-400 shrink-0" />
+                            <span className="truncate">
+                              <strong className="text-slate-300">{h.idProofType || "Govt ID"}:</strong> {h.idProofNumber}
+                            </span>
+                          </div>
+                        )}
+                        {h.workShift && (
+                          <div className="flex items-center gap-1.5">
+                            <Clock size={13} className="text-slate-500 shrink-0" />
+                            <span>Shift: {h.workShift}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
-                    <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                    <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
                       <button
                         onClick={() => setSelectedHelpForQR(h)}
-                        className="py-1.5 px-3 rounded-xl bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 text-xs font-bold flex items-center gap-1.5 border border-blue-500/30"
+                        className="flex-1 py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition-colors"
                       >
                         <QrCode size={14} />
                         <span>Security QR</span>
@@ -393,13 +432,25 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
 
                       <button
                         onClick={() => toggleHelpMut.mutate({ id: h.id, isActive: !h.isActive })}
-                        className={`text-xs font-bold px-2.5 py-1 rounded-lg border ${
+                        className={`text-xs font-bold px-2.5 py-1.5 rounded-lg border transition-all ${
                           h.isActive
                             ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                             : "bg-rose-500/10 text-rose-400 border-rose-500/20"
                         }`}
                       >
                         {h.isActive ? "● Active" : "○ Paused"}
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (confirm(`Remove domestic staff entry clearance for ${h.name}?`)) {
+                            deleteHelpMut.mutate(h.id);
+                          }
+                        }}
+                        className="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700 transition-colors"
+                        title="Unlink Staff"
+                      >
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   </div>
@@ -409,24 +460,22 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
           </div>
         )}
 
-        {/* TAB 3: NOTICES & INCIDENTS */}
+        {/* TAB 3: NOTICES */}
         {activeTab === "notices" && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-2xl font-black text-white tracking-tight">Campus Security & Resident Notices</h1>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Official security announcements, campus traffic alerts, and residence updates.
-              </p>
+              <h1 className="text-xl font-bold text-white tracking-tight">Campus Security Notices</h1>
+              <p className="text-xs text-slate-400">Security announcements, traffic alerts, and residence updates.</p>
             </div>
 
             {notices.length === 0 ? (
-              <div className="bg-slate-950/60 border border-slate-800 rounded-3xl p-12 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-600/20 text-emerald-400 flex items-center justify-center text-3xl mx-auto mb-4 font-black">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
+                <div className="w-12 h-12 rounded-xl bg-slate-800 text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-3">
                   🛡️
                 </div>
-                <h3 className="text-lg font-bold text-white">All Clear — No Security Alerts</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1.5">
-                  Campus security operations are normal across all 4 gates.
+                <h3 className="text-base font-bold text-white">No Active Security Alerts</h3>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
+                  Campus gate and traffic operations are currently normal across all gates.
                 </p>
               </div>
             ) : (
@@ -434,15 +483,15 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
                 {notices.map((n) => (
                   <div
                     key={n.id}
-                    className="bg-slate-950/80 border border-slate-800 rounded-2xl p-5 shadow-lg flex items-start gap-4"
+                    className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex items-start gap-4"
                   >
-                    <div className="p-3 rounded-xl bg-amber-500/20 text-amber-400 text-xl shrink-0">
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-lg shrink-0">
                       ⚠️
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <h3 className="font-bold text-white text-base">{n.title}</h3>
-                        <span className="text-xs text-slate-500">{new Date(n.createdAt).toLocaleDateString()}</span>
+                        <h3 className="font-bold text-white text-sm">{n.title}</h3>
+                        <span className="text-xs text-slate-500 font-mono">{new Date(n.createdAt).toLocaleDateString()}</span>
                       </div>
                       <p className="text-xs text-slate-300 mt-1 leading-relaxed">{n.description}</p>
                     </div>
@@ -466,31 +515,52 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
         />
       )}
 
-      {/* QR PASS MODAL */}
+      {/* ADD DOMESTIC STAFF MODAL */}
+      {showAddHelpModal && (
+        <AddHouseHelpModal
+          onClose={() => setShowAddHelpModal(false)}
+          onCreated={(help) => {
+            setShowAddHelpModal(false);
+            setSelectedHelpForQR(help);
+            queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
+          }}
+        />
+      )}
+
+      {/* VIP QR PASS MODAL */}
       {selectedPassForQR && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-7 w-full max-w-sm text-center shadow-2xl animate-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-sm font-bold text-white">Official Gate Pass QR</h3>
+              <h3 className="text-sm font-bold text-white">Campus Gate Pass QR</h3>
               <button onClick={() => setSelectedPassForQR(null)} className="p-1 rounded-lg text-slate-400 hover:text-white">
                 ✕
               </button>
             </div>
 
-            <div className="bg-white p-4 rounded-2xl inline-block shadow-inner mb-4">
+            <div className="bg-white p-4 rounded-xl inline-block shadow-inner mb-4">
               {qrDataUrl ? (
-                <img src={qrDataUrl} alt="VIP Pass QR" className="w-52 h-52 mx-auto" />
+                <img src={qrDataUrl} alt="Gate Pass QR" className="w-48 h-48 mx-auto" />
               ) : (
-                <div className="w-52 h-52 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-slate-800" size={32} />
+                <div className="w-48 h-48 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-slate-800" size={28} />
                 </div>
               )}
             </div>
 
-            <h4 className="text-lg font-black text-white">{selectedPassForQR.guestName}</h4>
-            <p className="text-xs text-slate-300 mt-0.5">{selectedPassForQR.purpose}</p>
+            <div className="flex justify-center gap-1.5 mb-1.5">
+              <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold uppercase">
+                {selectedPassForQR.tier || "VIP PASS"}
+              </span>
+              <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-bold uppercase">
+                {selectedPassForQR.visitType || "OFFICIAL"}
+              </span>
+            </div>
+
+            <h4 className="text-base font-bold text-white">{selectedPassForQR.guestName}</h4>
+            <p className="text-xs text-slate-400 mt-0.5">{selectedPassForQR.purpose}</p>
             {selectedPassForQR.vehicleNumber && (
-              <p className="text-xs text-blue-400 font-mono font-bold mt-1">🚗 {selectedPassForQR.vehicleNumber}</p>
+              <p className="text-xs text-slate-300 font-mono font-semibold mt-1">Vehicle: {selectedPassForQR.vehicleNumber}</p>
             )}
 
             <div className="mt-5 flex gap-2">
@@ -501,7 +571,7 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
                   setCopiedId("pass");
                   setTimeout(() => setCopiedId(null), 3000);
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold flex items-center justify-center gap-1.5"
+                className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5"
               >
                 {copiedId === "pass" ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
                 <span>{copiedId === "pass" ? "Copied!" : "Copy Link"}</span>
@@ -509,10 +579,70 @@ function StaffConsole({ userName, userEmail }: { userName: string; userEmail: st
               <button
                 onClick={() => {
                   const shareUrl = `${window.location.origin}/vip/${selectedPassForQR.token}`;
-                  const msg = `Hello ${selectedPassForQR.guestName}, here is your Official Campus Gate Pass for Thapar University: ${shareUrl}`;
+                  const msg = `Campus Gate Pass: ${shareUrl}`;
                   window.open(`https://wa.me/${selectedPassForQR.guestPhone?.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`, "_blank");
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/30"
+                className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5"
+              >
+                <Share2 size={14} />
+                <span>WhatsApp</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DOMESTIC STAFF QR MODAL */}
+      {selectedHelpForQR && (
+        <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm text-center shadow-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-sm font-bold text-white">Domestic Staff Gate Clearance</h3>
+              <button onClick={() => setSelectedHelpForQR(null)} className="p-1 rounded-lg text-slate-400 hover:text-white">
+                ✕
+              </button>
+            </div>
+
+            <div className="bg-white p-4 rounded-xl inline-block shadow-inner mb-4">
+              {qrDataUrl ? (
+                <img src={qrDataUrl} alt="Domestic Staff QR" className="w-48 h-48 mx-auto" />
+              ) : (
+                <div className="w-48 h-48 flex items-center justify-center">
+                  <Loader2 className="animate-spin text-slate-800" size={28} />
+                </div>
+              )}
+            </div>
+
+            <div className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-slate-800 text-slate-300 border border-slate-700 mb-1 uppercase">
+              {selectedHelpForQR.serviceType}
+            </div>
+            <h4 className="text-base font-bold text-white">{selectedHelpForQR.name}</h4>
+            <p className="text-xs text-slate-400 font-mono mt-0.5">📞 {selectedHelpForQR.phone}</p>
+            <p className="text-xs text-slate-300 mt-0.5">Quarter: {selectedHelpForQR.quarterNumber}</p>
+            {selectedHelpForQR.idProofNumber && (
+              <p className="text-[11px] text-emerald-400 mt-1 font-mono">
+                🪪 {selectedHelpForQR.idProofType || "Govt ID"}: {selectedHelpForQR.idProofNumber}
+              </p>
+            )}
+
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(selectedHelpForQR.token);
+                  setCopiedId("help");
+                  setTimeout(() => setCopiedId(null), 3000);
+                }}
+                className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5"
+              >
+                {copiedId === "help" ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                <span>{copiedId === "help" ? "Copied!" : "Copy Token"}</span>
+              </button>
+              <button
+                onClick={() => {
+                  const msg = `Security Pass ID for ${selectedHelpForQR.name}: ${selectedHelpForQR.token}`;
+                  window.open(`https://wa.me/${selectedHelpForQR.phone?.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(msg)}`, "_blank");
+                }}
+                className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5"
               >
                 <Share2 size={14} />
                 <span>WhatsApp</span>
@@ -529,8 +659,9 @@ function CreateVIPModal({ onClose, onCreated }: { onClose: () => void; onCreated
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [vehicleNumber, setVehicleNumber] = useState("");
-  const [visitType, setVisitType] = useState<"PERSONAL" | "OFFICIAL">("OFFICIAL");
-  const [tier, setTier] = useState<"GUEST" | "DELEGATE" | "VIP">("GUEST");
+  const [purpose, setPurpose] = useState("Academic Guest / Faculty Visit");
+  const [visitType, setVisitType] = useState<"OFFICIAL" | "PERSONAL">("OFFICIAL");
+  const [tier, setTier] = useState<"VIP" | "DELEGATE" | "GUEST" | "GENERAL">("VIP");
   const [validityDays, setValidityDays] = useState("1");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -545,7 +676,7 @@ function CreateVIPModal({ onClose, onCreated }: { onClose: () => void; onCreated
       const cleanPhone = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : "";
 
       if (guestPhone.trim() && cleanPhone.length !== 10) {
-        throw new Error("Guest mobile number must be 10 digits (e.g. 9876543210)");
+        throw new Error("Guest mobile number must be 10 digits");
       }
 
       const now = new Date();
@@ -556,153 +687,363 @@ function CreateVIPModal({ onClose, onCreated }: { onClose: () => void; onCreated
         guestName: guestName.trim(),
         guestPhone: cleanPhone || undefined,
         visitType,
-        tier: visitType === "OFFICIAL" ? tier : undefined,
+        tier,
+        purpose: purpose.trim(),
         vehicleNumber: vehicleNumber ? vehicleNumber.toUpperCase().replace(/\s+/g, "").trim() : undefined,
         validFrom: now.toISOString(),
         validUntil: validUntil.toISOString(),
       });
       onCreated(res);
     } catch (err: any) {
-      setError(err?.message || "Failed to generate VIP pass.");
+      setError(err?.message || "Failed to generate pass.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 sm:p-7 w-full max-w-lg shadow-2xl animate-in zoom-in-95 duration-150 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center text-xl font-black">
-              🎫
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white leading-tight">Issue VIP Guest Pass</h3>
-              <p className="text-xs text-slate-400">Pre-authorized digital entry pass</p>
-            </div>
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-bold text-white">Issue Visitor Gate Pass</h3>
+            <p className="text-xs text-slate-400">Pre-authorized digital entry pass</p>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
-            ✕
-          </button>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
         </div>
 
         {error && (
-          <div className="mb-5 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium leading-relaxed">
+          <div className="mb-4 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          {/* Visit Type & Tier Toggle */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Visit Type</label>
+              <div className="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setVisitType("OFFICIAL")}
+                  className={`py-1 text-xs font-bold rounded-lg transition ${
+                    visitType === "OFFICIAL" ? "bg-slate-800 text-white shadow" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Official
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setVisitType("PERSONAL")}
+                  className={`py-1 text-xs font-bold rounded-lg transition ${
+                    visitType === "PERSONAL" ? "bg-slate-800 text-white shadow" : "text-slate-400 hover:text-white"
+                  }`}
+                >
+                  Personal
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Guest Tier</label>
+              <select
+                value={tier}
+                onChange={(e) => setTier(e.target.value as any)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-slate-600"
+              >
+                <option value="VIP">VIP Guest</option>
+                <option value="DELEGATE">Academic Delegate</option>
+                <option value="GUEST">General Visitor</option>
+                <option value="GENERAL">Contractor / Vendor</option>
+              </select>
+            </div>
+          </div>
+
           <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1.5">
-              Guest / Visitor Name <span className="text-rose-400">*</span>
-            </label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Guest Full Name *</label>
             <input
               type="text"
-              placeholder="e.g. Dr. A.K. Verma (External Examiner)"
+              required
+              placeholder="e.g. Dr. Rajesh Khanna"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
-              required
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">Guest Mobile Number (Optional)</label>
-              <input
-                type="tel"
-                placeholder="e.g. 9876543210"
-                value={guestPhone}
-                onChange={(e) => setGuestPhone(e.target.value)}
-                maxLength={13}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">Guest Vehicle Plate (Optional)</label>
-              <input
-                type="text"
-                placeholder="e.g. DL8CAB1234"
-                value={vehicleNumber}
-                onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
-                maxLength={10}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white uppercase font-mono focus:outline-none focus:border-blue-500 transition-colors"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Mobile Number (10 Digits)</label>
+            <input
+              type="tel"
+              maxLength={10}
+              placeholder="e.g. 9876543210"
+              value={guestPhone}
+              onChange={(e) => setGuestPhone(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-slate-600"
+            />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">Pass Category</label>
-              <select
-                value={visitType}
-                onChange={(e) => setVisitType(e.target.value as any)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
-              >
-                <option value="OFFICIAL">🏛️ Official University Guest</option>
-                <option value="PERSONAL">🏡 Personal / Family Guest</option>
-              </select>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Vehicle License Plate</label>
+              <input
+                type="text"
+                placeholder="e.g. PB11AB1234"
+                value={vehicleNumber}
+                onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono uppercase focus:outline-none focus:border-slate-600"
+              />
             </div>
-
             <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">Validity Period</label>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Validity (Days)</label>
               <select
                 value={validityDays}
                 onChange={(e) => setValidityDays(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
               >
-                <option value="1">Valid Today (24 Hours)</option>
-                <option value="3">Valid 3 Days (Conferences / Exams)</option>
-                <option value="7">Valid 1 Week</option>
-                <option value="30">Valid 1 Month</option>
+                <option value="1">1 Day (Today)</option>
+                <option value="3">3 Days</option>
+                <option value="7">7 Days</option>
+                <option value="30">30 Days</option>
               </select>
             </div>
           </div>
 
-          {visitType === "OFFICIAL" && (
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1.5">Guest VIP Tier</label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: "GUEST", label: "Official Guest" },
-                  { id: "DELEGATE", label: "Examiner / Delegate" },
-                  { id: "VIP", label: "VIP Dignitary" },
-                ].map((t) => (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTier(t.id as any)}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold border transition-all ${
-                      tier === t.id
-                        ? "bg-blue-600/30 border-blue-500 text-blue-300 shadow-sm"
-                        : "bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200"
-                    }`}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Purpose of Visit</label>
+            <input
+              type="text"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              placeholder="e.g. Academic Council Meeting / Lab Review"
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+            />
+          </div>
 
           <div className="pt-3 border-t border-slate-800 flex justify-end gap-2.5">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !guestName.trim()}
-              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-2 shadow-lg shadow-blue-600/30 transition-all"
+              className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold transition-all disabled:opacity-50"
             >
-              {loading ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-              <span>Generate VIP Pass</span>
+              {loading ? "Generating..." : "Generate Pass"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function AddHouseHelpModal({ onClose, onCreated }: { onClose: () => void; onCreated: (help: HouseHelpDTO) => void }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [serviceType, setServiceType] = useState("MAID");
+  const [quarterNumber, setQuarterNumber] = useState("Faculty Residence B-104");
+  const [workShift, setWorkShift] = useState("Morning (07:00 - 11:00)");
+  const [idProofType, setIdProofType] = useState("AADHAAR");
+  const [idProofNumber, setIdProofNumber] = useState("");
+  const [idProofDocUrl, setIdProofDocUrl] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const SERVICE_TYPES = [
+    { id: "MAID", label: "Maid / Domestic Help" },
+    { id: "COOK", label: "Cook / Chef" },
+    { id: "DRIVER", label: "Driver" },
+    { id: "CLEANER", label: "Cleaner" },
+    { id: "GARDENER", label: "Gardener" },
+    { id: "ELECTRICIAN", label: "Electrician / Plumber" },
+    { id: "OTHER", label: "Other Staff" },
+  ];
+
+  const ID_PROOF_TYPES = [
+    { id: "AADHAAR", label: "Aadhaar Card" },
+    { id: "VOTER_ID", label: "Voter ID Card" },
+    { id: "DRIVING_LICENSE", label: "Driving License" },
+    { id: "PASSPORT", label: "Passport" },
+    { id: "OTHER", label: "Other Govt Photo ID" },
+  ];
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      const cleanPhone = phone.replace(/[^0-9]/g, "").slice(-10);
+      if (cleanPhone.length !== 10) {
+        throw new Error("Valid 10-digit mobile number is required");
+      }
+      if (!name.trim()) throw new Error("Staff name is required");
+      if (!quarterNumber.trim()) throw new Error("Quarter number is required");
+
+      const res = await createStaffHouseHelp({
+        name: name.trim(),
+        phone: cleanPhone,
+        serviceType,
+        quarterNumber: quarterNumber.trim(),
+        workShift,
+        idProofType,
+        idProofNumber: idProofNumber.trim() || undefined,
+        idProofDocUrl: idProofDocUrl.trim() || undefined,
+        validUntil: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+      });
+
+      onCreated(res);
+    } catch (err: any) {
+      setError(err?.message || "Failed to register staff");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-base font-bold text-white">Register Domestic Staff</h3>
+            <p className="text-xs text-slate-400">Quarter entry clearance &amp; ID Proof</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">✕</button>
+        </div>
+
+        {error && (
+          <div className="mb-4 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          <div>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Staff Full Name *</label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Ramesh Kumar"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Phone Number (10 Digits) *</label>
+              <input
+                type="tel"
+                required
+                maxLength={10}
+                placeholder="9876500111"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-slate-600"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Staff Category *</label>
+              <select
+                value={serviceType}
+                onChange={(e) => setServiceType(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+              >
+                {SERVICE_TYPES.map((t) => (
+                  <option key={t.id} value={t.id}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Quarter / Residence *</label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Faculty Residence B-104"
+                value={quarterNumber}
+                onChange={(e) => setQuarterNumber(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1">Work Shift</label>
+              <input
+                type="text"
+                value={workShift}
+                onChange={(e) => setWorkShift(e.target.value)}
+                placeholder="e.g. Morning (07:00 - 11:00)"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+              />
+            </div>
+          </div>
+
+          {/* Government ID Proof Fields */}
+          <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
+            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+              Govt ID Proof Verification
+            </span>
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">ID Proof Type</label>
+                <select
+                  value={idProofType}
+                  onChange={(e) => setIdProofType(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
+                >
+                  {ID_PROOF_TYPES.map((t) => (
+                    <option key={t.id} value={t.id}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">ID Proof Number</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 9102-8812-4410"
+                  value={idProofNumber}
+                  onChange={(e) => setIdProofNumber(e.target.value)}
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Photo / Proof Document Link (Optional)</label>
+              <input
+                type="url"
+                placeholder="https://.../id-proof.jpg"
+                value={idProofDocUrl}
+                onChange={(e) => setIdProofDocUrl(e.target.value)}
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="pt-3 border-t border-slate-800 flex justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !name.trim() || !phone.trim()}
+              className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold transition-all disabled:opacity-50"
+            >
+              {loading ? "Registering..." : "Register Staff"}
             </button>
           </div>
         </form>
@@ -717,76 +1058,129 @@ function StaffLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLogin = async (eUser?: string, ePass?: string) => {
+    const useEmail = (eUser || email).toLowerCase().trim();
+    const usePass = ePass || password;
+
+    if (!useEmail || !usePass) {
+      setError("Please provide your university email and password.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
-    const res = await signIn("credentials", {
-      redirect: false,
-      email: email.trim(),
-      password,
-    });
-
-    if (res?.error) {
-      setError("Invalid university email or password.");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: useEmail, password: usePass }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Invalid credentials.");
+        setLoading(false);
+        return;
+      }
+      window.location.href = "/staff";
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in. Please try again.");
       setLoading(false);
-    } else {
-      window.location.reload();
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-slate-950 border border-slate-800 rounded-3xl p-8 shadow-2xl">
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-3xl shadow-lg shadow-blue-500/25 mx-auto mb-4 font-black">
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-7 shadow-2xl">
+        <div className="text-center mb-6">
+          <div className="w-12 h-12 rounded-xl bg-slate-800 text-slate-300 border border-slate-700 flex items-center justify-center text-xl shadow mx-auto mb-2.5 font-bold">
             🎓
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">Thapar Gate Pass</h1>
-          <p className="text-xs text-slate-400 mt-1">Staff & Faculty Portal Sign In</p>
+          <h2 className="text-lg font-bold text-white tracking-tight">Faculty &amp; Resident Portal</h2>
+          <p className="text-xs text-slate-400">Campus Visitor &amp; Parking System</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium">
+          <div className="mb-4 p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        {/* 1-Tap Quick Sign-In */}
+        <div className="mb-5 p-3 rounded-xl bg-slate-950 border border-slate-800">
+          <p className="text-[11px] font-semibold text-slate-400 mb-2">1-Tap Demo Accounts:</p>
+          <div className="space-y-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("staff1@campus.edu");
+                setPassword("staff123");
+                handleLogin("staff1@campus.edu", "staff123");
+              }}
+              className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-left transition"
+            >
+              <div>
+                <div className="text-xs font-semibold text-white">Prof. Rajesh Sharma</div>
+                <div className="text-[10px] text-slate-400 font-mono">staff1@campus.edu • Pass: staff123</div>
+              </div>
+              <span className="text-[11px] font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">Sign In</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setEmail("prof.kaur@thapar.edu");
+                setPassword("staff123");
+                handleLogin("prof.kaur@thapar.edu", "staff123");
+              }}
+              className="w-full flex items-center justify-between p-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-left transition"
+            >
+              <div>
+                <div className="text-xs font-semibold text-white">Dr. Simran Kaur</div>
+                <div className="text-[10px] text-slate-400 font-mono">prof.kaur@thapar.edu • Pass: staff123</div>
+              </div>
+              <span className="text-[11px] font-bold text-slate-300 bg-slate-800 px-2 py-0.5 rounded">Sign In</span>
+            </button>
+          </div>
+        </div>
+
+        <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-3">
           <div>
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
-              University Email (@campus.edu / @thapar.edu)
-            </label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">University Email</label>
             <input
               type="email"
+              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
-              required
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">Password</label>
+            <label className="block text-xs font-semibold text-slate-300 mb-1">Password</label>
             <input
               type="password"
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
-              required
+              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2 transition-all mt-6"
+            className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold transition shadow-sm mt-2 flex items-center justify-center gap-2"
           >
-            {loading ? <Loader2 size={18} className="animate-spin" /> : <Lock size={18} />}
-            <span>Sign In to Staff Console</span>
+            {loading ? <Loader2 size={16} className="animate-spin" /> : "Sign In to Portal"}
           </button>
         </form>
+
+        <div className="mt-5 text-center">
+          <Link href="/" className="text-xs font-semibold text-slate-400 hover:text-white transition">
+            ← Back to Campus Directory
+          </Link>
+        </div>
       </div>
     </div>
   );

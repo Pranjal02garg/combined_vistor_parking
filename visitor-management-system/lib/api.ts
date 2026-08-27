@@ -103,7 +103,8 @@ export interface SubmitVIPPassBody {
   guestName: string;
   guestPhone?: string;
   visitType: "PERSONAL" | "OFFICIAL";
-  tier?: "VIP" | "GENERAL";
+  purpose?: string;
+  tier?: "VIP" | "GENERAL" | "GUEST" | "DELEGATE";
   vehicleNumber?: string;
   validFrom?: string;
   validUntil?: string;

@@ -1,94 +1,143 @@
 import Link from "next/link";
-import { QrCode, ShieldCheck, ArrowRight, LayoutDashboard, Users } from "lucide-react";
+import {
+  QrCode,
+  ShieldCheck,
+  ArrowRight,
+  LayoutDashboard,
+  Users,
+  Car,
+  Building,
+} from "lucide-react";
 
-const GATES = ["1", "2", "3", "4"];
+const GATES = [
+  { code: "1", name: "Gate 1", tag: "Main Gate & ANPR" },
+  { code: "2", name: "Gate 2", tag: "Faculty & Staff" },
+  { code: "3", name: "Gate 3", tag: "Hostel Zone" },
+  { code: "4", name: "Gate 4", tag: "Service & Vendor" },
+];
 
 export default function Home() {
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col justify-center gap-8 px-6 py-12">
+    <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-5 py-10">
       <header className="text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-600 text-white">
-          <ShieldCheck size={28} />
+        <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-600 text-white shadow-lg shadow-brand-600/25">
+          <ShieldCheck size={32} />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Campus Gate Pass</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Multi-gate digital visitor management
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+          Campus Gate Pass &amp; Parking System
+        </h1>
+        <p className="mt-1.5 text-xs sm:text-sm text-slate-500 max-w-md mx-auto">
+          Digital visitor management, automated license plate recognition, faculty parking permits, and security control.
         </p>
-      </header> 
+      </header>
 
-      {/* Visitor entry — in production this is reached by scanning a per-gate QR. */}
+      {/* Visitor Check-in Section */}
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-3 flex items-center gap-2 text-slate-700">
-          <QrCode size={18} />
-          <h2 className="text-sm font-semibold uppercase tracking-wide">
-            Visitor check-in
-          </h2>
+        <div className="mb-3 flex items-center justify-between">
+          <div className="flex items-center gap-2 text-slate-800">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-50 text-brand-600">
+              <QrCode size={16} />
+            </div>
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+              Visitor Digital Check-in
+            </h2>
+          </div>
+          <span className="text-[11px] font-semibold text-brand-600 bg-brand-50 px-2 py-0.5 rounded-md">
+            Scan Gate QR
+          </span>
         </div>
-        <p className="mb-4 text-sm text-slate-500">
-          Pick a gate to open the intake form (simulates a QR scan).
+        <p className="mb-3.5 text-xs text-slate-500">
+          Select an entry gate to open the intake form (simulates a visitor scanning gate QR):
         </p>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
           {GATES.map((gate) => (
             <Link
-              key={gate}
-              href={`/register?gate=${gate}`}
-              className="flex h-16 flex-col items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition-colors hover:border-brand-500 hover:bg-brand-50 active:bg-brand-100"
+              key={gate.code}
+              href={`/register?gate=${gate.code}`}
+              className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-slate-700 transition-all hover:border-brand-500 hover:bg-brand-50 hover:shadow-sm active:scale-95"
             >
-              <span className="text-lg font-bold leading-none">{gate}</span>
-              <span className="mt-1 text-[11px] text-slate-400">Gate</span>
+              <span className="text-xl font-bold text-brand-600">{gate.code}</span>
+              <span className="mt-0.5 text-xs font-semibold">{gate.name}</span>
+              <span className="text-[10px] text-slate-400 text-center leading-tight mt-0.5">
+                {gate.tag}
+              </span>
             </Link>
           ))}
         </div>
       </section>
 
-      {/* Staff & admin consoles — sign-in required. */}
+      {/* Official Portals */}
       <div className="space-y-3">
-        {/* Admin console. */}
-        <Link
-          href="/head"
-          className="flex items-center justify-between rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-sm transition-colors hover:bg-slate-800 active:bg-slate-700"
-        >
-          <span>
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <LayoutDashboard size={18} /> Admin console
-            </span>
-            <span className="mt-0.5 block text-xs text-slate-400">
-              Analytics, approvals &amp; full control
-            </span>
-          </span>
-          <ArrowRight size={20} />
-        </Link>
-
-        {/* Staff console. */}
+        {/* Staff & Faculty Portal */}
         <Link
           href="/staff"
-          className="flex items-center justify-between rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-sm transition-colors hover:bg-slate-800 active:bg-slate-700"
+          className="group flex items-center justify-between rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-sm transition-all hover:bg-slate-850 hover:ring-1 hover:ring-slate-700"
         >
-          <span>
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <Users size={18} /> Staff console
-            </span>
-            <span className="mt-0.5 block text-xs text-slate-400">
-              Issue &amp; track VIP passes
-            </span>
-          </span>
-          <ArrowRight size={20} />
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-brand-400 border border-slate-700">
+              <Car size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-white">Faculty &amp; Staff Portal</span>
+                <span className="rounded-md bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300">
+                  Staff / Faculty
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Registered vehicles, live parking slots, barrier access, VIP guest passes &amp; house helps
+              </p>
+            </div>
+          </div>
+          <ArrowRight size={18} className="text-slate-400 group-hover:translate-x-1 group-hover:text-white transition-all" />
         </Link>
 
-        {/* Guard console. */}
+        {/* Guard Console */}
         <Link
           href="/guard"
-          className="flex items-center justify-between rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-sm transition-colors hover:bg-slate-800 active:bg-slate-700"
+          className="group flex items-center justify-between rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-sm transition-all hover:bg-slate-850 hover:ring-1 hover:ring-slate-700"
         >
-          <span>
-            <span className="flex items-center gap-2 text-sm font-semibold">
-              <ShieldCheck size={18} /> Guard console
-            </span>
-            <span className="mt-0.5 block text-xs text-slate-400">
-              Review queue &amp; mark exits
-            </span>
-          </span>
-          <ArrowRight size={20} />
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-emerald-400 border border-slate-700">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-white">Guard Security Console</span>
+                <span className="rounded-md bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                  Gate Security
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Visitor approval queue, cross-gate tracking, QR scanner &amp; Fast-Lane ANPR barrier feed
+              </p>
+            </div>
+          </div>
+          <ArrowRight size={18} className="text-slate-400 group-hover:translate-x-1 group-hover:text-white transition-all" />
+        </Link>
+
+        {/* Head Admin Console */}
+        <Link
+          href="/head"
+          className="group flex items-center justify-between rounded-2xl bg-slate-900 px-5 py-4 text-white shadow-sm transition-all hover:bg-slate-850 hover:ring-1 hover:ring-slate-700"
+        >
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-800 text-amber-400 border border-slate-700">
+              <LayoutDashboard size={20} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-white">Head Admin Command Center</span>
+                <span className="rounded-md bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-amber-300">
+                  Security Chief
+                </span>
+              </div>
+              <p className="mt-0.5 text-xs text-slate-400">
+                Campus analytics, VIP approvals, parking lot &amp; permit manager, form builder &amp; blacklist
+              </p>
+            </div>
+          </div>
+          <ArrowRight size={18} className="text-slate-400 group-hover:translate-x-1 group-hover:text-white transition-all" />
         </Link>
       </div>
     </main>

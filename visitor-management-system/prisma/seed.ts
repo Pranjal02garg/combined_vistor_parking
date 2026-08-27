@@ -449,12 +449,126 @@ async function main() {
     },
   });
 
-  await prisma.blacklist.create({
+  console.log("🅿️ Seeding Smart Parking Lots & Faculty Vehicles...");
+  await prisma.barrierAccessLog.deleteMany({});
+  await prisma.cameraEventLog.deleteMany({});
+  await prisma.facultyVehicle.deleteMany({});
+  await prisma.parkingLot.deleteMany({});
+
+  const lotS4 = await prisma.parkingLot.create({
     data: {
-      name: "Repeated Unauthorized Vehicle",
-      phone: "9999900000",
-      reason: "Suspicious activity & repeated reckless speeding near Library roundabout",
-      createdById: headUser.id,
+      name: "Faculty Lot S4 (South Zone)",
+      code: "LOT_S4",
+      zone: "S4",
+      totalCapacity: 50,
+      occupied: 24,
+      reservedFaculty: 30,
+    },
+  });
+
+  const lotAdmin = await prisma.parkingLot.create({
+    data: {
+      name: "Main Administrative Lot",
+      code: "LOT_ADMIN",
+      zone: "ADMIN",
+      totalCapacity: 35,
+      occupied: 18,
+      reservedFaculty: 20,
+    },
+  });
+
+  const lotE4 = await prisma.parkingLot.create({
+    data: {
+      name: "Engineering & Computing Lot E4",
+      code: "LOT_E4",
+      zone: "E4",
+      totalCapacity: 60,
+      occupied: 38,
+      reservedFaculty: 35,
+    },
+  });
+
+  // Seed Faculty Vehicles
+  const vehicle1 = await prisma.facultyVehicle.create({
+    data: {
+      userId: staffUser1.id,
+      plateNumber: "PB11BH8820",
+      stickerColor: "green",
+      vehicleType: "CAR",
+      modelName: "Honda City (Pearl White)",
+      isActive: true,
+    },
+  });
+
+  const vehicle2 = await prisma.facultyVehicle.create({
+    data: {
+      userId: staffUser1.id,
+      plateNumber: "PB10AB1234",
+      stickerColor: "blue",
+      vehicleType: "CAR",
+      modelName: "Tata Nexon EV (Blue)",
+      isActive: true,
+    },
+  });
+
+  const vehicle3 = await prisma.facultyVehicle.create({
+    data: {
+      userId: staffUser2.id,
+      plateNumber: "CH01AR9999",
+      stickerColor: "green",
+      vehicleType: "CAR",
+      modelName: "Toyota Fortuner (Black)",
+      isActive: true,
+    },
+  });
+
+  // Seed Barrier Access Logs
+  await prisma.barrierAccessLog.create({
+    data: {
+      userId: staffUser1.id,
+      vehicleId: vehicle1.id,
+      gateId: gates[0].id,
+      plateNumber: "PB11BH8820",
+      action: "BARRIER_OPEN",
+      method: "ANPR",
+      status: "SUCCESS",
+      createdAt: twentyMinsAgo,
+    },
+  });
+
+  await prisma.barrierAccessLog.create({
+    data: {
+      userId: staffUser2.id,
+      vehicleId: vehicle3.id,
+      gateId: gates[1].id,
+      plateNumber: "CH01AR9999",
+      action: "BARRIER_OPEN",
+      method: "GATE_QR_SCAN",
+      status: "SUCCESS",
+      createdAt: fiveMinsAgo,
+    },
+  });
+
+  // Seed ANPR Live Camera Events
+  await prisma.cameraEventLog.create({
+    data: {
+      gateId: gates[0].id,
+      plateNumber: "PB11BH8820",
+      cameraType: "ENTRY",
+      confidence: 0.98,
+      matched: true,
+      createdAt: twentyMinsAgo,
+    },
+  });
+
+  await prisma.cameraEventLog.create({
+    data: {
+      gateId: gates[1].id,
+      plateNumber: "PB10AB1234",
+      cameraType: "ENTRY",
+      confidence: 0.96,
+      matched: true,
+      createdAt: fiveMinsAgo,
     },
   });
 

@@ -1,6 +1,8 @@
 import type { Role } from "@prisma/client";
 import { auth } from "@/auth";
 import { prisma } from "./prisma";
+import { cookies } from "next/headers";
+import { decode } from "@auth/core/jwt";
 
 export interface GuardSession {
   userId: string;
@@ -10,17 +12,47 @@ export interface GuardSession {
 
 /** Returns the authenticated staff session, or null if not signed in. */
 export async function getGuard(): Promise<GuardSession | null> {
-  const session = await auth();
-  if (!session?.user?.id) return null;
+  let session = await auth().catch(() => null);
 
-  let userId = session.user.id;
-  let role = session.user.role;
-  let gateIds = session.user.gateIds ?? [];
+  let userId = session?.user?.id;
+  let role = session?.user?.role;
+  let gateIds = session?.user?.gateIds ?? [];
+  let email = session?.user?.email;
 
-  if (session.user.email) {
+  if (!userId) {
+    try {
+      const cookieStore = await cookies();
+      const rawToken =
+        cookieStore.get("authjs.session-token")?.value ||
+        cookieStore.get("__Secure-authjs.session-token")?.value ||
+        cookieStore.get("next-auth.session-token")?.value;
+
+      if (rawToken) {
+        const secret = process.env.AUTH_SECRET || "dev-secret-key-campus-vms-super-secret-key-32-bytes!";
+        const decoded: any = await decode({
+          token: rawToken,
+          secret,
+          salt: "authjs.session-token",
+        }).catch(() => null);
+
+        if (decoded?.uid) {
+          userId = decoded.uid;
+          role = decoded.role;
+          gateIds = decoded.gateIds || [];
+          email = decoded.email;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (!userId) return null;
+
+  if (email) {
     try {
       const dbUser = await prisma.user.findUnique({
-        where: { email: session.user.email },
+        where: { email },
         select: { id: true, role: true, gates: { select: { id: true } } },
       });
       if (dbUser) {
@@ -35,7 +67,7 @@ export async function getGuard(): Promise<GuardSession | null> {
 
   return {
     userId,
-    role,
+    role: role as Role,
     gateIds,
   };
 }

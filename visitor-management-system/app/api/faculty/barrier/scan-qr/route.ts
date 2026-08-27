@@ -21,7 +21,6 @@ export async function POST(req: Request) {
     return fail(400, "QR Payload is required");
   }
 
-  // Parse gate code from QR payload: e.g. "GATE_1_BOOTH_KEY", "gate:1", "1"
   let gateCode = "1";
   const upper = qrPayload.toUpperCase();
   if (upper.includes("GATE_2") || upper.includes("GATE:2") || upper === "2") gateCode = "2";
@@ -38,16 +37,21 @@ export async function POST(req: Request) {
   }
 
   const primaryCar = user.vehicles[0];
+  const gate = await prisma.gate.findUnique({ where: { code: gateCode } }) || await prisma.gate.findFirst();
 
   const log = await prisma.barrierAccessLog.create({
     data: {
-      gateCode,
-      triggeredBy: "QR_BOOTH_SCAN",
       userId: user.id,
+      vehicleId: primaryCar?.id || null,
+      gateId: gate?.id || null,
       plateNumber: primaryCar?.plateNumber || null,
-      stickerColor: primaryCar?.stickerColor || "green",
-      reason: `QR Booth Scan Authenticated: ${qrPayload.substring(0, 30)}`,
+      action: "BARRIER_OPEN",
+      method: "GATE_QR_SCAN",
       status: "SUCCESS",
+      details: {
+        reason: `QR Booth Scan Authenticated: ${qrPayload.substring(0, 30)}`,
+        stickerColor: primaryCar?.stickerColor || "green",
+      },
     },
   });
 

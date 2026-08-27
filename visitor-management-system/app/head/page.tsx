@@ -109,8 +109,9 @@ import {
 import * as LucideIcons from "lucide-react";
 import { CATEGORY_ICON } from "@/lib/icons";
 import { printCsvReport } from "@/lib/exportReport";
+import ParkingAdminPanel from "@/components/ParkingAdminPanel";
 
-type TopSection = "dashboard" | "guest_passes" | "house_helps" | "incidents" | "forms" | "blacklist" | "settings" | "search" | "analytics" | "audit" | "users";
+type TopSection = "dashboard" | "parking" | "guest_passes" | "house_helps" | "incidents" | "forms" | "blacklist" | "settings" | "search" | "analytics" | "audit" | "users";
 type SubTab = "vip" | "alerts" | "active";
 
 function formatClock(iso: string): string {
@@ -162,21 +163,30 @@ function HeadLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    if (!email || !password) return;
+  async function handleLogin(e?: React.FormEvent, customEmail?: string, customPass?: string) {
+    if (e) e.preventDefault();
+    const useEmail = (customEmail || email).toLowerCase().trim();
+    const usePass = customPass || password;
+    if (!useEmail || !usePass) return;
     setLoading(true);
     setError("");
-    const res = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
-    setLoading(false);
-    if (res?.error) {
-      setError("Invalid email or password. Please try again.");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: useEmail, password: usePass }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Invalid credentials.");
+        setLoading(false);
+        return;
+      }
+      window.location.href = "/head";
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in. Please try again.");
+      setLoading(false);
     }
-    // On success, the parent component will re-render with authenticated session
   }
 
   return (
@@ -248,10 +258,18 @@ function HeadLoginPage() {
 
         <button
           type="button"
-          onClick={() => signIn("google", { callbackUrl: "/head" })}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 active:bg-slate-100"
+          onClick={() => {
+            setEmail("admin@campus.edu");
+            setPassword("admin123");
+            signIn("credentials", { email: "admin@campus.edu", password: "admin123", redirect: false });
+          }}
+          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 p-3 text-left transition hover:bg-slate-100"
         >
-          <GoogleIcon /> Sign in with Google
+          <div>
+            <div className="text-xs font-bold text-slate-900">🛡️ Col. Sanjeev Bakshi (Chief Admin)</div>
+            <div className="text-[11px] text-slate-500 font-mono">admin@campus.edu</div>
+          </div>
+          <span className="text-xs font-bold text-blue-600">1-Tap Sign In →</span>
         </button>
 
         <div className="text-center">
@@ -470,6 +488,12 @@ function HeadConsole({ userName }: { userName: string }) {
             onClick={() => setSection("dashboard")}
             label="Command Board"
             icon={<Users size={17} />}
+          />
+          <SidebarNavButton
+            active={section === "parking"}
+            onClick={() => setSection("parking")}
+            label="Parking & ANPR"
+            icon={<Car size={17} />}
           />
           <SidebarNavButton
             active={section === "guest_passes"}
@@ -1200,6 +1224,8 @@ function HeadConsole({ userName }: { userName: string }) {
             ) : null}
           </div>
         )}
+
+        {section === "parking" && <ParkingAdminPanel />}
 
         {section === "guest_passes" && <GuestPassesOverwatchPanel onEditPass={(p) => setEditVIPMode(p)} />}
 
@@ -4063,7 +4089,7 @@ function AnalyticsPanel() {
                       {/* Progress bar */}
                       <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
                         <div
-                          className="h-full bg-gradient-to-r from-brand-500 to-indigo-600 rounded-full transition-all duration-500"
+                          className="h-full bg-slate-900 rounded-full transition-all duration-500"
                           style={{ width: `${Math.max(5, pct)}%` }}
                         />
                       </div>

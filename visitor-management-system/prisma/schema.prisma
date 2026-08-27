@@ -45,6 +45,18 @@ model User {
   passwordHash String
   role         Role       @default(GUARD)
   isActive     Boolean    @default(true)
+
+  // Profile & Faculty Parking Attributes
+  department       String?
+  facultyId        String?
+  phone            String?
+  alternateContact String?
+  parkingEligible  Boolean    @default(true)
+  eligibleFrom     DateTime?
+  eligibleTill     DateTime?
+  vehicles         FacultyVehicle[]
+  barrierLogs      BarrierAccessLog[]
+
   // Gates this user may operate. HEAD bypasses gate scoping via role check.
   gates        Gate[]     @relation("GateStaff")
   decisions    VisitLog[] @relation("DecidedBy")
@@ -101,6 +113,8 @@ model Gate {
   vipExits   VIPPass[]  @relation("VIPExitGate")
   guardSessions GuardSession[]
   houseHelpLogs HouseHelpLog[]
+  barrierLogs   BarrierAccessLog[]
+  cameraEvents  CameraEventLog[]
   createdAt  DateTime   @default(now())
 }
 
@@ -419,4 +433,73 @@ model IncidentLog {
   @@index([createdAt])
 }
 
+// ---------------------------------------------------------------------------
+// Unified Campus Parking, Vehicle & ANPR Gate Barrier Models
+// ---------------------------------------------------------------------------
 
+model FacultyVehicle {
+  id           String             @id @default(cuid())
+  userId       String
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plateNumber  String             @unique // e.g. "PB11BH8820"
+  stickerColor String             @default("green") // "green" | "red" | "blue"
+  vehicleType  String             @default("CAR") // "CAR" | "BIKE" | "EV"
+  modelName    String?            // e.g. "Honda City (White)"
+  isActive     Boolean            @default(true)
+  barrierLogs  BarrierAccessLog[]
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  @@index([userId, isActive])
+  @@index([plateNumber])
+}
+
+model ParkingLot {
+  id              String   @id @default(cuid())
+  code            String   @unique // e.g. "LOT_S4", "LOT_ADMIN", "LOT_E4"
+  name            String   // e.g. "Faculty Lot S4"
+  zone            String   // e.g. "S4", "ADMIN", "E4"
+  totalCapacity   Int      @default(50)
+  occupied        Int      @default(0)
+  reservedFaculty Int      @default(30)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([code])
+}
+
+model BarrierAccessLog {
+  id          String          @id @default(cuid())
+  userId      String?
+  user        User?           @relation(fields: [userId], references: [id])
+  vehicleId   String?
+  vehicle     FacultyVehicle? @relation(fields: [vehicleId], references: [id])
+  gateId      String?
+  gate        Gate?           @relation(fields: [gateId], references: [id])
+  plateNumber String?
+  action      String          // "BARRIER_OPEN", "BARRIER_CLOSE", "DENIED"
+  method      String          // "ANPR", "GATE_QR_SCAN", "REMOTE_1TAP", "GUARD_OVERRIDE"
+  status      String          @default("SUCCESS") // "SUCCESS", "SUSPENDED_PERMIT", "UNAUTHORIZED"
+  details     Json?
+  createdAt   DateTime        @default(now())
+
+  @@index([userId, createdAt])
+  @@index([gateId, createdAt])
+  @@index([plateNumber])
+}
+
+model CameraEventLog {
+  id          String   @id @default(cuid())
+  gateId      String?
+  gate        Gate?    @relation(fields: [gateId], references: [id])
+  plateNumber String
+  cameraType  String   // "ENTRY", "EXIT"
+  confidence  Float?
+  snapshotUrl String?
+  matched     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([gateId, createdAt])
+  @@index([plateNumber, createdAt])
+}

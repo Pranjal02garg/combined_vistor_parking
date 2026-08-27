@@ -44,6 +44,7 @@ import {
 } from "@/lib/api";
 import { categoryColor } from "@/lib/categoryColors";
 import { playGuardSound } from "@/lib/audio";
+import GuardAnprFeed from "@/components/GuardAnprFeed";
 
 // ===========================================================================
 // Auth wrapper (unchanged) — routes STAFF/HEAD to their portals; GUARD → console.
@@ -88,13 +89,24 @@ function LoginScreen() {
     if (pin.length < 4) return setError("Enter PIN");
     setBusy(true);
     setError("");
-    const res = await signIn("credentials", { email, password: pin, redirect: false });
-    setBusy(false);
-    if (res?.error) {
-      setError("Invalid PIN");
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password: pin }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || "Invalid PIN");
+        setPin("");
+        setBusy(false);
+        return;
+      }
+      window.location.href = "/guard";
+    } catch (err: any) {
+      setError(err.message || "Failed to sign in. Please try again.");
       setPin("");
-    } else {
-      router.refresh();
+      setBusy(false);
     }
   }
 
@@ -184,7 +196,7 @@ function LoginScreen() {
 // ===========================================================================
 // Console — exactly two tabs.
 // ===========================================================================
-type Tab = "requests" | "inside" | "past" | "scan";
+type Tab = "requests" | "inside" | "past" | "scan" | "anpr";
 
 function Console() {
   const { data: session } = useSession();
@@ -428,7 +440,7 @@ function Console() {
           </div>
         )}
 
-        {/* Four tabs now (Requests and Scan disabled during Lockdown) */}
+        {/* Five tabs now (Requests, Inside, Past, Scan, Fast-Lane ANPR) */}
         <div className="mx-auto flex max-w-2xl overflow-x-auto no-scrollbar border-b border-slate-100">
           {!lockdown?.active && (
             <BigTab active={tab === "requests"} onClick={() => setTab("requests")} label="Requests" count={items.filter(i => i.state === "PENDING" && (i.kind === "VIP" || i.entryGateId === activeGateId)).length} />
@@ -438,6 +450,7 @@ function Console() {
           {!lockdown?.active && (
             <BigTab active={tab === "scan"} onClick={() => setTab("scan")} label="Scan" icon />
           )}
+          <BigTab active={tab === "anpr"} onClick={() => setTab("anpr")} label="ANPR Barrier" />
         </div>
       </header>
 
@@ -499,6 +512,10 @@ function Console() {
           onEscalate={onEscalate}
           onOpenDetails={setDetail}
         />
+      ) : tab === "anpr" ? (
+        <div className="mx-auto max-w-2xl px-4 py-4">
+          <GuardAnprFeed activeGateId={activeGateId} />
+        </div>
       ) : (
         <LiveTraffic
           items={items}

@@ -30,7 +30,6 @@ export const sessionCallback: NonNullable<Callbacks["session"]> = ({ session, to
 export const authConfig = {
   session: { strategy: "jwt" },
   trustHost: true,
-  pages: { signIn: "/guard" }, // the guard console hosts the sign-in UI
   providers: [], // filled in by auth.ts
   callbacks: {
     jwt: jwtCallback,

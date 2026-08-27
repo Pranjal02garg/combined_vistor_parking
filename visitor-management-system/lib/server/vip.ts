@@ -45,7 +45,7 @@ export function toVIPDTO(p: VIPWithRelations): VIPDTO {
     purpose: p.purpose,
     vehicleNumber: p.vehicleNumber,
     status: effectiveStatus(p),
-    hostStaffName: p.hostStaff.name,
+    hostStaffName: p.hostStaff?.name ?? "Staff Member",
     approver:
       p.approvedBy && p.approvedAt
         ? { name: p.approvedBy.name, approvedAt: p.approvedAt.toISOString() }

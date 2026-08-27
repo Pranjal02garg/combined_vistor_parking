@@ -24,7 +24,6 @@ export async function GET(req: Request) {
       parkingEligible: true,
       eligibleFrom: true,
       eligibleTill: true,
-      defaultSticker: true,
       vehicles: {
         where: { isActive: true },
         orderBy: { createdAt: "desc" },
@@ -76,7 +75,7 @@ export async function GET(req: Request) {
       parkingEligible: user.parkingEligible,
       eligibleFrom: user.eligibleFrom || new Date("2026-01-01"),
       eligibleTill: user.eligibleTill || new Date("2027-12-31"),
-      defaultSticker: user.defaultSticker || "green",
+      defaultSticker: user.vehicles[0]?.stickerColor || "green",
     },
     vehicles: user.vehicles,
     lots: lots.map((l) => ({

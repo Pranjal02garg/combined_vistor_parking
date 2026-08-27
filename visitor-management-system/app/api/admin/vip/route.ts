@@ -33,7 +33,7 @@ export async function POST(req: Request) {
     data: {
       token: newVipToken(),
       guestName: d.guestName,
-      guestPhone: d.guestPhone,
+      guestPhone: d.guestPhone ?? "",
       purpose: d.purpose,
       vehicleNumber: d.vehicleNumber ? d.vehicleNumber.toUpperCase() : null,
       validFrom: d.validFrom ? new Date(d.validFrom) : null,

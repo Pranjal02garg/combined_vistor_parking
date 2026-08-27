@@ -8,16 +8,14 @@ export async function POST(req: Request) {
   const session = await getGuard();
   if (!session) return fail(401, "Not signed in");
 
-  let body: any;
+  let body: any = {};
   try {
     body = await req.json();
   } catch {
-    return fail(400, "Invalid JSON");
+    // empty body is fine
   }
 
   const { gateCode, reason } = body;
-
-  const validGates = ["1", "2", "3", "4", "GATE_1", "GATE_2", "GATE_3", "GATE_4"];
   const code = String(gateCode || "1").replace("GATE_", "");
 
   const user = await prisma.user.findUnique({
@@ -30,24 +28,30 @@ export async function POST(req: Request) {
   }
 
   const primaryCar = user.vehicles[0];
+  const gate = await prisma.gate.findUnique({ where: { code } }) || await prisma.gate.findFirst();
 
   // Log barrier trigger event
   const log = await prisma.barrierAccessLog.create({
     data: {
-      gateCode: code,
-      triggeredBy: "FACULTY_APP_PULSE",
       userId: user.id,
+      vehicleId: primaryCar?.id || null,
+      gateId: gate?.id || null,
       plateNumber: primaryCar?.plateNumber || null,
-      stickerColor: primaryCar?.stickerColor || "green",
-      reason: reason || `1-Tap Faculty Barrier Open at Gate ${code}`,
+      action: "BARRIER_OPEN",
+      method: "REMOTE_1TAP",
       status: "SUCCESS",
+      details: {
+        reason: reason || `1-Tap Faculty Barrier Open at Gate ${code}`,
+        stickerColor: primaryCar?.stickerColor || "green",
+      },
     },
   });
 
   return ok({
     success: true,
-    message: `Boom Barrier at Gate ${code} opened successfully. Please proceed with caution.`,
+    message: `Boom Barrier at ${gate?.name || "Gate " + code} opened successfully. Please proceed with caution.`,
     gateCode: code,
+    gate: gate?.name || "Main Gate 1",
     logId: log.id,
     timestamp: new Date().toISOString(),
   });
