@@ -1,0 +1,29 @@
+# ── Runtime databases ──
+*.db
+*.db-shm
+*.db-wal
+
+# ── Logs ──
+*.log
+
+# ── Secrets ──
+.env
+
+# ── Python ──
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+
+# ── IDE ──
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── OS ──
+.DS_Store
+Thumbs.db

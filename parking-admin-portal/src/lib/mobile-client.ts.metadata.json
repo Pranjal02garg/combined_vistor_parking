@@ -1,0 +1,4 @@
+{
+  "summary": "Client-side mobile API service wrapper for managing Bearer tokens, user sessions, vehicle CRUD, QR scans, and barrier triggers against /api/mobile/* endpoints.",
+  "updatedAt": "2026-08-27T20:17:05.167781Z"
+}

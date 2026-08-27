@@ -1,0 +1,422 @@
+// Multi-Gate VMS — data model.
+// All PKs are opaque cuids (non-sequential, enumeration-proof); the only value ever
+// shown to a visitor is `VisitLog.referenceCode`, a separate crypto-random token.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  HEAD // absolute authority: approves VIP passes, views executive analytics
+  GUARD // daily traffic: standard approvals + VIP scan/check-in at their gate
+  STAFF // issues VIP passes for their guests
+}
+
+enum VisitStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  ESCALATED
+  EXITED
+}
+
+enum VIPPassStatus {
+  PENDING // staff created, awaiting HEAD
+  APPROVED // HEAD approved — valid, guest may present QR
+  REJECTED // HEAD rejected
+  CHECKED_IN // guard scanned + activated at a gate (entered)
+  EXITED // guard scanned out
+  EXPIRED // past validUntil, never used
+}
+
+// NOTE: visitor categories are now dynamic rows in FormCategory (see below), not an enum.
+// VisitLog.category stores the category `key` as a String snapshot.
+
+/// Staff who operate the console. Password auth via NextAuth Credentials provider.
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  role         Role       @default(GUARD)
+  isActive     Boolean    @default(true)
+  // Gates this user may operate. HEAD bypasses gate scoping via role check.
+  gates        Gate[]     @relation("GateStaff")
+  decisions    VisitLog[] @relation("DecidedBy")
+  exitsHandled VisitLog[] @relation("ExitedBy")
+  // VIP-pass relations
+  vipHosted    VIPPass[]  @relation("VIPHost")
+  vipApproved  VIPPass[]  @relation("VIPApprover")
+  vipScanned   VIPPass[]  @relation("VIPScanner")
+  
+  // New God Mode relations
+  broadcasts   BroadcastLog[]
+  auditLogs    AuditLog[]
+
+  // House Help relations
+  registeredHelps HouseHelp[]      @relation("RegisteredHouseHelps")
+  approvedHelps   HouseHelp[]      @relation("ApprovedHouseHelps")
+  staffHelps      StaffHouseHelp[] @relation("StaffEmployers")
+
+  // Incident relations
+  staffIncidents    IncidentLog[] @relation("StaffIncidents")
+  reportedIncidents IncidentLog[] @relation("ReportedIncidents")
+
+  // Password reset (forgot-password flow)
+  resetTokens  PasswordResetToken[]
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+/// Single-use password-reset token. Only a SHA-256 hash of the raw token is
+/// stored (never the raw value) so a DB leak can't be replayed as a live reset link.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model Gate {
+  id         String     @id @default(cuid())
+  code       String     @unique // stable short code embedded in the gate QR, e.g. "1"
+  name       String     @unique // e.g. "Gate 1"
+  location   String
+  isActive   Boolean    @default(true)
+  staff      User[]     @relation("GateStaff")
+  entryLogs  VisitLog[] @relation("EntryGate")
+  exitLogs   VisitLog[] @relation("ExitGate")
+  vipEntries VIPPass[]  @relation("VIPEntryGate")
+  vipExits   VIPPass[]  @relation("VIPExitGate")
+  guardSessions GuardSession[]
+  houseHelpLogs HouseHelpLog[]
+  createdAt  DateTime   @default(now())
+}
+
+/// Reusable person identity (deduped by phone across many visits).
+model Visitor {
+  id            String     @id @default(cuid())
+  phone         String     @unique
+  name          String
+  overstayCount Int        @default(0) // times exited after overstaying (repeat-defaulter signal)
+  visitCount    Int        @default(0)
+  lastVisitAt   DateTime?
+  visits        VisitLog[]
+  createdAt     DateTime   @default(now())
+
+  @@index([name])
+}
+
+/// One visit session — the core operational record.
+model VisitLog {
+  id             String      @id @default(cuid())
+  referenceCode  String      @unique // crypto-random, non-sequential; shown to the visitor
+  category       String // FormCategory.key snapshot (dynamic categories)
+  categoryLabel  String? // display label snapshot at write time
+  details        Json // category-specific dynamic field values
+  fieldsSnapshot Json? // ordered [{ label, value }] snapshot — history-proof rendering
+  selfieUrl      String // Vercel Blob URL (never Base64 in the DB)
+  status         VisitStatus @default(PENDING)
+
+  // Hoisted for fast, indexed guard search (also present inside details).
+  vehicleNumber String?
+
+  // True once a Parent has cleared OTP verification (audit).
+  phoneVerified Boolean @default(false)
+
+  // Mandatory-prompted guard name tag (logged as "unnamed" if skipped)
+  onDutyGuard   String?
+
+  // Audit trail for HEAD edits.
+  editedById String?
+  editedAt   DateTime?
+
+  visitor   Visitor @relation(fields: [visitorId], references: [id])
+  visitorId String
+
+  entryGate   Gate    @relation("EntryGate", fields: [entryGateId], references: [id])
+  entryGateId String
+  exitGate    Gate?   @relation("ExitGate", fields: [exitGateId], references: [id])
+  exitGateId  String?
+
+  decidedBy   User?   @relation("DecidedBy", fields: [decidedById], references: [id])
+  decidedById String?
+  exitedBy    User?   @relation("ExitedBy", fields: [exitedById], references: [id])
+  exitedById  String?
+
+  createdAt  DateTime  @default(now()) // submission time
+  approvedAt DateTime? // real "entered campus" time
+  exitedAt   DateTime?
+  exitReason String? // reason for force exit or special exit
+
+  @@index([status, entryGateId]) // gate-scoped pending queue
+  @@index([status]) // campus-wide approved search
+  @@index([vehicleNumber])
+  @@index([visitorId])
+  // Analytics: keep date-truncated aggregations index-only on Neon.
+  @@index([createdAt, status, category]) // daily category breakdown + status counts
+  @@index([status, exitedAt]) // currently-on-campus + daily exits
+  @@index([entryGateId, createdAt]) // per-gate throughput windows
+}
+
+/// Staff-generated VIP pass — separate lifecycle from VisitLog. Two-step:
+/// HEAD approves (PENDING→APPROVED), then a GUARD scan activates it (→CHECKED_IN).
+model VIPPass {
+  id            String        @id @default(cuid())
+  token         String        @unique // crypto-random; encoded in the QR
+  guestName     String
+  guestPhone    String
+  purpose       String
+  vehicleNumber String?
+  validFrom     DateTime?
+  validUntil    DateTime?
+  status        VIPPassStatus @default(PENDING)
+
+  hostStaff    User      @relation("VIPHost", fields: [hostStaffId], references: [id])
+  hostStaffId  String
+  approvedBy   User?     @relation("VIPApprover", fields: [approvedById], references: [id])
+  approvedById String?
+  approvedAt   DateTime?
+  scannedBy    User?     @relation("VIPScanner", fields: [scannedById], references: [id])
+  scannedById  String?
+
+  entryGate   Gate?     @relation("VIPEntryGate", fields: [entryGateId], references: [id])
+  entryGateId String?
+  exitGate    Gate?     @relation("VIPExitGate", fields: [exitGateId], references: [id])
+  exitGateId  String?
+  enteredAt   DateTime?
+  exitedAt    DateTime?
+
+  onDutyGuard String?
+
+  // Audit trail for HEAD edits.
+  editedById String?
+  editedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status]) // HEAD pending queue
+  @@index([hostStaffId]) // "my passes" for staff
+  @@index([enteredAt, status]) // VIP throughput + active-on-campus analytics
+  @@index([validFrom, validUntil, status])
+}
+
+// ---------------------------------------------------------------------------
+// Dynamic form engine — the intake form config, HEAD-managed (was lib/categories.ts).
+// ---------------------------------------------------------------------------
+
+model FormCategory {
+  id          String      @id @default(cuid())
+  key         String      @unique // stable machine key, e.g. "PARENT", "EVENT_GUEST"
+  label       String
+  description String?
+  icon        String? // lucide icon name
+  sortOrder   Int         @default(0)
+  active      Boolean     @default(true) // soft-delete = archived, never removed
+  overstayMinutes Int?    // P1: Category-specific overstay threshold
+  fields      FormField[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model FormField {
+  id                String        @id @default(cuid())
+  category          FormCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId        String
+  name              String // machine key, e.g. "studentName"
+  label             String
+  type              String // "text" | "tel" | "select" | "number"
+  required          Boolean       @default(true)
+  placeholder       String?
+  pattern           String? // validation regex (server + client)
+  maxLength         Int?
+  sortOrder         Int           @default(0)
+  active            Boolean       @default(true)
+  // "required only when another field = value" (e.g. Parent hostel on Pickup)
+  requiredWhenField String?
+  requiredWhenValue String?
+  options           FieldOption[]
+
+  @@unique([categoryId, name])
+}
+
+model FieldOption {
+  id        String    @id @default(cuid())
+  field     FormField @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  fieldId   String
+  value     String
+  label     String
+  sortOrder Int       @default(0)
+}
+
+// ---------------------------------------------------------------------------
+// Universal admin control — settings + blacklist.
+// ---------------------------------------------------------------------------
+
+/// Singleton config row (always id = "global"; enforced via upsert in code).
+model SystemSettings {
+  id                 String   @id @default("global")
+  overstayMinutes    Int      @default(120)
+  defaulterThreshold Int      @default(3)
+  featureFlags       Json? // arbitrary HEAD-editable on/off toggles
+  updatedAt          DateTime @updatedAt
+  updatedById        String?
+}
+
+model Blacklist {
+  id          String    @id @default(cuid())
+  phone       String    @unique
+  name        String?
+  reason      String
+  active      Boolean   @default(true)
+  expiresAt   DateTime? // null = permanent; else temporary
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([phone, active])
+}
+
+// ---------------------------------------------------------------------------
+// God Mode Tracking Tables
+// ---------------------------------------------------------------------------
+
+model GuardSession {
+  id          String   @id @default(cuid())
+  gateId      String
+  guardName   String
+  lastPingAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  gate        Gate     @relation(fields: [gateId], references: [id], onDelete: Cascade)
+
+  @@index([gateId, lastPingAt])
+}
+
+model BroadcastLog {
+  id           String   @id @default(cuid())
+  message      String
+  priority     String   @default("normal")
+  sendAt       DateTime @default(now())
+  expiresAt    DateTime?
+  sentById     String
+  
+  sentBy       User     @relation(fields: [sentById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([sendAt])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  action       String   // e.g., "LOCKDOWN", "FORCE_EXIT", "VIP_APPROVE"
+  entityType   String   // e.g., "SYSTEM", "VisitLog", "VIPPass"
+  entityId     String?
+  actorId      String
+  details      Json?
+  
+  actor        User     @relation(fields: [actorId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Domestic Staff / House Help Models
+// ---------------------------------------------------------------------------
+
+model HouseHelp {
+  id             String           @id @default(cuid())
+  token          String           @unique // e.g. "HLP-ABC123XYZ"
+  name           String
+  phone          String           @unique
+  idProofType    String?          // e.g. "AADHAAR", "VOTER_ID", "DRIVING_LICENSE"
+  idProofNumber  String?
+  idProofDocUrl  String?          // Uploaded Aadhaar/ID photo or scan
+  photoUrl       String?          // Helper face photo
+  serviceType    String           @default("MAID") // MAID, COOK, DRIVER, CLEANER, GARDENER, OTHER
+  status         String           @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, SUSPENDED, REJECTED
+  registeredById String
+  registeredBy   User             @relation("RegisteredHouseHelps", fields: [registeredById], references: [id])
+  approvedById   String?
+  approvedBy     User?            @relation("ApprovedHouseHelps", fields: [approvedById], references: [id])
+  approvedAt     DateTime?
+  staffLinks     StaffHouseHelp[]
+  logs           HouseHelpLog[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([phone])
+  @@index([status])
+}
+
+model StaffHouseHelp {
+  id            String    @id @default(cuid())
+  staffId       String
+  staff         User      @relation("StaffEmployers", fields: [staffId], references: [id], onDelete: Cascade)
+  houseHelpId   String
+  houseHelp     HouseHelp @relation(fields: [houseHelpId], references: [id], onDelete: Cascade)
+  quarterNumber String    // e.g. "Quarter 14B", "Type-IV 201"
+  validUntil    DateTime  // Staff managed validity expiration
+  isActive      Boolean   @default(true) // Staff toggle active / pause
+  workShift     String?   // e.g. "07:00 - 11:00", "Full Day"
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@unique([staffId, houseHelpId])
+  @@index([staffId, isActive])
+}
+
+model HouseHelpLog {
+  id          String    @id @default(cuid())
+  houseHelpId String
+  houseHelp   HouseHelp @relation(fields: [houseHelpId], references: [id], onDelete: Cascade)
+  gateId      String?
+  gate        Gate?     @relation(fields: [gateId], references: [id])
+  action      String    // "CHECK_IN", "CHECK_OUT", "DENIED"
+  remarks     String?
+  createdAt   DateTime  @default(now())
+
+  @@index([houseHelpId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Residence & Staff Misconduct / Nuisance Incident Log (Admin & Staff Only)
+// ---------------------------------------------------------------------------
+
+model IncidentLog {
+  id            String    @id @default(cuid())
+  title         String
+  description   String
+  severity      String    @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status        String    @default("FLAGGED") // FLAGGED, RESOLVED, DISMISSED
+  staffId       String?   // Associated staff member / residence quarter
+  staff         User?     @relation("StaffIncidents", fields: [staffId], references: [id])
+  quarterNumber String?   // e.g. "Quarter 14B"
+  reportedById  String    // Admin user who filed the incident
+  reportedBy    User      @relation("ReportedIncidents", fields: [reportedById], references: [id])
+  resolution    String?   // Admin resolution notes
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([staffId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+

@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Smart Parking — Live Display</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@700&display=swap" rel="stylesheet"/>
+  <style>
+    /* ═══ RESET ═══ */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{
+      width:100vw;height:100vh;overflow:hidden;
+      font-family:'Inter',sans-serif;
+      background:#ffffff; color:#111827; /* High contrast daylight mode */
+      cursor:none; /* hide cursor on kiosk */
+    }
+
+    /* ═══ CSS VARIABLES ═══ */
+    :root{
+      --brand: #2563eb;    /* Professional Blue */
+      --success: #16a34a;  /* Clear Green */
+      --danger: #dc2626;   /* Bright Red */
+      --bg: #ffffff;
+      --bg-card: #f8fafc;  /* Very light gray for cards */
+      --border: #e2e8f0;   /* Light border */
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+    }
+
+    /* ═══ LAYOUT ═══ */
+    #app{
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 24px 32px;
+      gap: 24px;
+    }
+
+    /* ═══ HEADER ═══ */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sys-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--brand);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .sys-sub {
+      font-size: 16px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .clock-wrap {
+      text-align: right;
+    }
+
+    #clock {
+      font-size: 56px;
+      font-weight: 800;
+      color: var(--text-main);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    #date {
+      font-size: 18px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-top: 4px;
+    }
+
+    /* ═══ MAIN CONTENT ═══ */
+    main {
+      flex: 1;
+      display: flex;
+      gap: 32px;
+      overflow: hidden;
+    }
+
+    .col-left   { width: 340px; display: flex; flex-direction: column; gap: 24px; }
+    .col-center { flex: 1;      display: flex; flex-direction: column; gap: 24px; }
+    .col-right  { width: 400px; display: flex; flex-direction: column; gap: 24px; }
+
+    /* ═══ CARDS ═══ */
+    .card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-title::before {
+      content: '';
+      width: 6px;
+      height: 20px;
+      background: var(--brand);
+      border-radius: 4px;
+    }
+
+    /* ═══ LEFT: STATS ═══ */
+    .stat-box {
+      background: var(--bg);
+      border: 3px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .stat-box:last-child { margin-bottom: 0; }
+
+    .stat-val {
+      font-size: 72px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stat-label {
+      font-size: 16px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .sc-occ { color: var(--brand); border-color: var(--brand); }
+    .sc-occ .stat-label { color: var(--text-muted); }
+
+    .sc-free { color: var(--success); border-color: var(--success); }
+    .sc-free .stat-label { color: var(--text-muted); }
+
+    .sc-tot { color: var(--text-main); border-color: var(--border); }
+    .sc-tot .stat-label { color: var(--text-muted); }
+
+    /* Warning state for Available slots */
+    .sc-free.warn { color: var(--danger); border-color: var(--danger); background: #fef2f2; }
+
+    /* ═══ CENTER: GRID ═══ */
+    .grid-legend {
+      display: flex;
+      gap: 24px;
+      margin-bottom: 20px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .leg-item { display: flex; align-items: center; gap: 8px; }
+    .leg-box { width: 16px; height: 16px; border-radius: 4px; border: 2px solid; }
+    .leg-box.occ { background: #dbeafe; border-color: var(--brand); }
+    .leg-box.free { background: #dcfce7; border-color: var(--success); }
+
+    #slot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+      gap: 10px;
+      align-content: start;
+      flex: 1;
+      overflow: hidden;
+    }
+    
+    .slot {
+      aspect-ratio: 1;
+      border-radius: 6px;
+      border: 2px solid;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    
+    .slot.free {
+      background: #dcfce7;
+      border-color: var(--success);
+    }
+    
+    .slot.occ {
+      background: #dbeafe;
+      border-color: var(--brand);
+    }
+    .slot.occ::after { content: '🚗'; }
+
+    /* ═══ RIGHT: RECENT EVENTS ═══ */
+    .hero-box {
+      background: #eff6ff;
+      border: 3px solid var(--brand);
+      border-radius: 12px;
+      padding: 32px 24px;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .hero-lbl {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--brand);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+    }
+    
+    #h-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 48px;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      word-break: break-all;
+      line-height: 1.1;
+    }
+    
+    #h-time {
+      font-size: 16px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    #feed {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow: hidden;
+    }
+    
+    .feed-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg);
+      border: 2px solid var(--border);
+      padding: 16px;
+      border-radius: 8px;
+    }
+    
+    .feed-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+    
+    .feed-time {
+      font-size: 16px;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ═══ FOOTER ═══ */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 20px;
+      border-top: 2px solid var(--border);
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+    
+    .ft-conn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .conn-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+    .conn-dot.off { background: var(--danger); }
+
+    /* ═══ ALERT OVERLAY ═══ */
+    #alert {
+      position: fixed; inset: 0; z-index: 9999;
+      background: rgba(255, 255, 255, 0.98);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    #alert.show { opacity: 1; }
+    
+    .alert-box {
+      text-align: center;
+      border: 8px solid var(--brand);
+      padding: 60px 100px;
+      border-radius: 32px;
+      background: var(--bg);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+    }
+    
+    .alert-lbl {
+      font-size: 36px;
+      font-weight: 800;
+      color: var(--brand);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      margin-bottom: 24px;
+    }
+    
+    #a-id {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 96px;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+  </style>
+</head>
+<body>
+
+<!-- Alert overlay -->
+<div id="alert">
+  <div class="alert-box">
+    <div class="alert-lbl">🚗 Vehicle Detected</div>
+    <div id="a-id">—</div>
+  </div>
+</div>
+
+<div id="app">
+
+  <!-- ══ HEADER ══ -->
+  <header>
+    <div class="header-left">
+      <div class="sys-title">Smart Parking Display</div>
+      <div class="sys-sub">Real-Time Occupancy Monitor</div>
+    </div>
+    <div class="clock-wrap">
+      <div id="clock">00:00:00</div>
+      <div id="date">Loading…</div>
+    </div>
+  </header>
+
+  <!-- ══ MAIN ══ -->
+  <main>
+
+    <!-- LEFT: Stats -->
+    <div class="col-left">
+      <div class="card" style="flex:1;">
+        <div class="card-title">Live Status</div>
+        
+        <div class="stat-box sc-occ">
+          <div class="stat-val" id="v-occ">0</div>
+          <div class="stat-label">Cars Inside</div>
+        </div>
+        
+        <div class="stat-box sc-free" id="card-free">
+          <div class="stat-val" id="v-free">—</div>
+          <div class="stat-label">Available Slots</div>
+        </div>
+        
+        <div class="stat-box sc-tot">
+          <div class="stat-val" id="v-tot">—</div>
+          <div class="stat-label">Total Capacity</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: Grid -->
+    <div class="col-center">
+      <div class="card" style="flex:1;">
+        <div class="card-title" style="margin-bottom: 0;">Parking Layout</div>
+        
+        <div class="grid-legend">
+          <div class="leg-item"><div class="leg-box occ"></div> Occupied</div>
+          <div class="leg-item"><div class="leg-box free"></div> Available</div>
+        </div>
+
+        <div id="slot-grid"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Recent -->
+    <div class="col-right">
+      <div class="card" style="flex:1; padding-bottom: 12px;">
+        <div class="card-title">Recent Activity</div>
+        
+        <div class="hero-box">
+          <div class="hero-lbl">Last Detection</div>
+          <div id="h-id">— — —</div>
+          <div id="h-time">Waiting for ANPR…</div>
+        </div>
+
+        <div id="feed"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ══ FOOTER ══ -->
+  <footer>
+    <div class="ft-conn">
+      <div class="conn-dot" id="conn-dot"></div>
+      <span id="conn-txt">Connecting to System…</span>
+    </div>
+    <div>Auto-Refresh Active</div>
+  </footer>
+
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   CONFIG 
+══════════════════════════════════════════════════════════════ */
+const CFG = {
+  JETSON_URL:    "http://localhost:5055",
+  POLL_MS:       3000,
+  ALERT_MS:      3000,
+  TOTAL_SLOTS:   100,
+};
+
+/* ── Full Screen ─────────────────────────────────────────── */
+function goFullscreen(){
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen();
+}
+window.addEventListener('load', () => { setTimeout(goFullscreen, 500); });
+document.addEventListener('click', goFullscreen);
+
+/* ── Clock ───────────────────────────────────────────────── */
+const DAYS   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const pad = n => String(n).padStart(2,'0');
+function tick(){
+  const n = new Date();
+  document.getElementById('clock').textContent = `${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())}`;
+  document.getElementById('date').textContent = `${DAYS[n.getDay()]}, ${n.getDate()} ${MONTHS[n.getMonth()]} ${n.getFullYear()}`;
+}
+tick(); setInterval(tick, 1000);
+
+/* ── Slot grid ───────────────────────────────────────────── */
+let totalSlots = CFG.TOTAL_SLOTS;
+let slotEls    = [];
+const gridEl   = document.getElementById('slot-grid');
+
+function buildGrid(n){
+  gridEl.innerHTML = ''; slotEls = [];
+  for(let i=0;i<n;i++){
+    const d = document.createElement('div');
+    d.className = 'slot free';
+    gridEl.appendChild(d); slotEls.push(d);
+  }
+}
+function updateGrid(occ){
+  if(slotEls.length !== totalSlots) buildGrid(totalSlots);
+  slotEls.forEach((el,i)=>{
+    if(i < occ){
+      if(!el.classList.contains('occ')) {
+        el.className = 'slot occ';
+      }
+    } else {
+      if(!el.classList.contains('free')) {
+        el.className = 'slot free';
+      }
+    }
+  });
+}
+
+/* ── Alert ───────────────────────────────────────────────── */
+const alertEl = document.getElementById('alert');
+let alertTimer;
+function showAlert(id){
+  clearTimeout(alertTimer);
+  document.getElementById('a-id').textContent = id.length > 18 ? id.slice(0,18)+'…' : id;
+  alertEl.classList.add('show');
+  alertTimer = setTimeout(()=>alertEl.classList.remove('show'), CFG.ALERT_MS);
+}
+
+/* ── Feed ────────────────────────────────────────────────── */
+let seenKeys = new Set();
+function fmtTime(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return `${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+function fmtShortId(id){
+  if(!id) return '—';
+  return id.length > 14 ? '…'+id.slice(-14) : id;
+}
+
+function updateFeed(rows){
+  const feedEl = document.getElementById('feed');
+  const newRows = rows.filter(r => !seenKeys.has(r.snap_id));
+  
+  if(newRows.length > 0){
+    const n = newRows[0];
+    const shortId = fmtShortId(n.snap_id);
+    document.getElementById('h-id').textContent = shortId;
+    document.getElementById('h-time').textContent = 'Detected at ' + fmtTime(n.entered);
+    showAlert(shortId);
+  }
+  seenKeys = new Set(rows.map(r => r.snap_id));
+
+  feedEl.innerHTML = '';
+  rows.slice(0, 7).forEach((r) => {
+    const d = document.createElement('div');
+    d.className = 'feed-row';
+    d.innerHTML = `
+      <div class="feed-id">${fmtShortId(r.snap_id)}</div>
+      <div class="feed-time">${fmtTime(r.entered)}</div>
+    `;
+    feedEl.appendChild(d);
+  });
+}
+
+/* ── Connectivity ────────────────────────────────────────── */
+const connDot = document.getElementById('conn-dot');
+const connTxt = document.getElementById('conn-txt');
+function setOnline(){ connDot.classList.remove('off'); connTxt.textContent = 'System Online & Connected'; }
+function setOffline(){ connDot.classList.add('off'); connTxt.textContent = 'System Offline — Retrying connection...'; }
+
+/* ── Demo Data ───────────────────────────────────────────── */
+let demoOcc = 23, demoDir = 1;
+const DEMO_IDS = ['PB10AB1234','DL3CAF9012','HR26DQ5678','MH12CD3456','UP32GH7890','CH01AA2233','RJ14XY4455','GJ17BC6677'];
+function demoData(){
+  demoOcc += demoDir * (Math.random()>.7?1:0);
+  if(demoOcc>=totalSlots) demoDir=-1;
+  if(demoOcc<=0) demoDir=1;
+  demoOcc = Math.max(0, Math.min(totalSlots, demoOcc));
+  const rows = DEMO_IDS.slice(0, Math.min(demoOcc,8)).map((id,i)=>({
+    snap_id: id, entered: new Date(Date.now() - i*480000).toISOString()
+  }));
+  return { occupied: demoOcc, available: totalSlots - demoOcc, total_slots: totalSlots, recent: rows };
+}
+
+/* ── Main poll ───────────────────────────────────────────── */
+async function poll(){
+  try {
+    const [sRes, rRes] = await Promise.all([
+      fetch(`${CFG.JETSON_URL}/api/status`,   {signal:AbortSignal.timeout(2000)}),
+      fetch(`${CFG.JETSON_URL}/api/recent?n=10`, {signal:AbortSignal.timeout(2000)}),
+    ]);
+    const s = await sRes.json();
+    const r = await rRes.json();
+    setOnline();
+    if(s.total_slots && s.total_slots !== totalSlots){
+      totalSlots = s.total_slots; buildGrid(totalSlots);
+    }
+    render(s.occupied, s.available, s.total_slots, r);
+  } catch(e){
+    setOffline();
+    const d = demoData();
+    render(d.occupied, d.available, d.total_slots, d.recent);
+  }
+}
+
+function render(occ, avail, tot, rows){
+  document.getElementById('v-occ').textContent = occ;
+  document.getElementById('v-free').textContent = avail;
+  document.getElementById('v-tot').textContent = tot;
+  updateGrid(occ);
+  updateFeed(rows || []);
+  const cf = document.getElementById('card-free');
+  if(avail <= 5) cf.classList.add('warn'); else cf.classList.remove('warn');
+}
+
+/* ── Boot ────────────────────────────────────────────────── */
+buildGrid(totalSlots);
+poll();
+setInterval(poll, CFG.POLL_MS);
+</script>
+</body>
+</html>

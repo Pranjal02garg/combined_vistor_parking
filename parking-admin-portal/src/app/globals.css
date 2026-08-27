@@ -1,0 +1,257 @@
+:root {
+  --background: #f4f7f8;
+  --foreground: #172229;
+  --surface: #ffffff;
+  --muted: #4b5d67;
+  --border: #d8e1e5;
+  --accent: #075b47;
+  --accent-strong: #064836;
+  --danger: #b42318;
+}
+
+html {
+  height: 100%;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  min-height: 100%;
+  color: var(--foreground);
+  background:
+    radial-gradient(circle at top left, #dff4ec 0%, transparent 45%),
+    radial-gradient(circle at bottom right, #e7eef4 0%, transparent 50%),
+    var(--background);
+  font-family: var(--font-geist-sans), "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-body {
+  min-height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+.home-layout,
+.auth-layout,
+.dashboard-layout {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 2rem 1rem;
+}
+
+.hero-card,
+.auth-card,
+.dashboard-card {
+  width: min(720px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 24px 60px rgba(8, 27, 35, 0.08);
+  padding: 2rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.auth-card {
+  width: min(480px, 100%);
+}
+
+.eyebrow {
+  color: var(--accent);
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+h1,
+.auth-title,
+.dashboard-title {
+  font-size: clamp(1.5rem, 2vw + 1rem, 2.1rem);
+  line-height: 1.2;
+}
+
+p,
+.auth-description,
+.dashboard-subtitle {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.status-pill {
+  align-self: start;
+  display: inline-flex;
+  gap: 0.35rem;
+  border: 1px solid #b9d8ce;
+  border-radius: 999px;
+  padding: 0.45rem 0.8rem;
+  background: #eefaf5;
+  color: #0c4635;
+  font-size: 0.9rem;
+}
+
+.cta-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.button-primary,
+.button-secondary {
+  border-radius: 12px;
+  border: 1px solid transparent;
+  padding: 0.65rem 1rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.button-primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+}
+
+.button-secondary {
+  color: var(--accent-strong);
+  background: #eaf4f1;
+  border-color: #c9ddda;
+}
+
+.button-primary:hover,
+.button-secondary:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.98);
+  text-decoration: none;
+}
+
+.button-primary:disabled,
+.button-secondary:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
+.auth-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.form-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.form-input {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  font: inherit;
+}
+
+.form-input:focus {
+  outline: 2px solid rgba(7, 91, 71, 0.2);
+  border-color: var(--accent);
+}
+
+.field-note,
+.auth-footnote {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.password-checklist {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.checklist-list {
+  list-style: none;
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.checklist-list li {
+  padding-left: 0.2rem;
+}
+
+.checklist-list li.valid {
+  color: #0f6d54;
+}
+
+.checklist-list li.invalid {
+  color: #7a3f18;
+}
+
+.error-banner {
+  border: 1px solid #fac4c1;
+  background: #fff1f1;
+  color: var(--danger);
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.details-grid {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.details-grid div {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #f8fbfd;
+}
+
+.details-grid dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.details-grid dd {
+  margin-top: 0.25rem;
+  font-family: var(--font-geist-mono), Consolas, monospace;
+  font-size: 0.9rem;
+  word-break: break-word;
+}
+
+.learning-links {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 640px) {
+  .hero-card,
+  .auth-card,
+  .dashboard-card {
+    padding: 1.25rem;
+    border-radius: 14px;
+  }
+}

@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    /* Stop long-press callouts and text selection flicker on touch targets. */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-slate-100 text-slate-900 antialiased;
+  }
+
+  /* Inputs at 16px prevent iOS Safari from auto-zooming when a field is focused. */
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px;
+  }
+}

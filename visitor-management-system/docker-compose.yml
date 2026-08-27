@@ -1,0 +1,22 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vsm-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_URL=${DATABASE_URL:-file:./prisma/dev.db}
+      - AUTH_SECRET=${AUTH_SECRET:-replace-me-with-a-32-byte-random-string}
+      - AUTH_URL=${AUTH_URL:-http://localhost:3000}
+      - BLOB_READ_WRITE_TOKEN=${BLOB_READ_WRITE_TOKEN}
+      - UPSTASH_REDIS_REST_URL=${UPSTASH_REDIS_REST_URL}
+      - UPSTASH_REDIS_REST_TOKEN=${UPSTASH_REDIS_REST_TOKEN}
+      - RUN_DB_MIGRATIONS=false
+    env_file:
+      - path: .env
+        required: false
