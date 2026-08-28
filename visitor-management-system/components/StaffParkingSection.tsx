@@ -21,9 +21,7 @@ import {
   Upload,
   ArrowUpRight,
   Clock,
-  Radio,
   FileCheck,
-  Key,
 } from "lucide-react";
 
 interface VehicleDTO {
@@ -116,7 +114,7 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
       return data;
     },
     onSuccess: () => {
-      setBarrierStatus(`Signal dispatched to ${selectedGate.replace("_", " ")}. Barrier open for 12 seconds.`);
+      setBarrierStatus(`Signal dispatched to ${selectedGate.replace("_", " ")}. Barrier opening for 12 seconds.`);
       setTimeout(() => setBarrierStatus(null), 6000);
       queryClient.invalidateQueries({ queryKey: ["parkingLots"] });
     },
@@ -279,22 +277,22 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
         </div>
 
         {/* Gate Selection & Large Remote Barrier Pulse Button */}
-        <div className="mt-8 pt-6 border-t border-slate-800/90 space-y-5">
+        <div className="mt-8 pt-6 border-t border-slate-800/90 space-y-6">
           <div>
             <div className="text-xs uppercase tracking-wider font-bold text-slate-400 mb-3">
               Select Gate Barrier Post
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
-                { id: "GATE_1", label: "Gate 1 (Main Entrance)" },
-                { id: "GATE_2", label: "Gate 2 (South Academic)" },
-                { id: "GATE_3", label: "Gate 3 (Hostel & Sports)" },
-                { id: "GATE_4", label: "Gate 4 (Faculty Quarters)" },
+                { id: "GATE_1", label: "Gate 1 (Main)" },
+                { id: "GATE_2", label: "Gate 2 (Faculty)" },
+                { id: "GATE_3", label: "Gate 3 (Hostel)" },
+                { id: "GATE_4", label: "Gate 4 (Quarters)" },
               ].map((g) => (
                 <button
                   key={g.id}
                   onClick={() => setSelectedGate(g.id)}
-                  className={`py-3 px-3.5 rounded-2xl text-xs sm:text-sm font-bold transition flex items-center justify-center text-center ${
+                  className={`py-3.5 px-4 rounded-2xl text-sm font-bold transition flex items-center justify-center text-center ${
                     selectedGate === g.id
                       ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25 border border-blue-400/30"
                       : "bg-slate-950 text-slate-300 hover:bg-slate-800 hover:text-white border border-slate-800"
@@ -306,19 +304,19 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
             </div>
           </div>
 
-          {/* Action Row */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
+          {/* Action Grid (Guaranteed No Overlapping) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 pt-1">
             <button
               onClick={() => barrierMutation.mutate(selectedGate)}
               disabled={barrierMutation.isPending}
-              className="flex-1 py-4 px-6 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-base font-bold flex items-center justify-center gap-3 shadow-lg shadow-emerald-600/20 transition active:scale-[0.98] disabled:opacity-50"
+              className="py-4 px-5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm sm:text-base font-bold flex items-center justify-center gap-2.5 shadow-lg shadow-emerald-600/20 transition active:scale-[0.98] disabled:opacity-50"
             >
               {barrierMutation.isPending ? (
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
-                <DoorOpen className="h-5 w-5" />
+                <DoorOpen className="h-5 w-5 shrink-0" />
               )}
-              <span>1-Tap Remote Open ({selectedGate.replace("_", " ")})</span>
+              <span>1-Tap Open ({selectedGate.replace("_", " ")})</span>
             </button>
 
             <button
@@ -326,18 +324,18 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
                 setShowScannerModal(true);
                 startCamera();
               }}
-              className="py-4 px-5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm font-bold flex items-center justify-center gap-2 border border-slate-700 transition"
+              className="py-4 px-5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-sm sm:text-base font-bold flex items-center justify-center gap-2.5 border border-slate-700 transition"
             >
-              <Camera className="h-4 w-4 text-slate-400" />
+              <Camera className="h-5 w-5 shrink-0 text-slate-400" />
               <span>Scan Barrier QR</span>
             </button>
 
             <button
               onClick={() => setShowAddVehicleModal(true)}
-              className="py-4 px-5 rounded-2xl bg-slate-100 hover:bg-white text-slate-950 text-sm font-bold flex items-center justify-center gap-2 shadow-sm transition"
+              className="py-4 px-5 rounded-2xl bg-slate-100 hover:bg-white text-slate-950 text-sm sm:text-base font-bold flex items-center justify-center gap-2.5 shadow-sm transition"
             >
-              <Plus className="h-4 w-4 text-slate-950" />
-              <span>+ Register Vehicle</span>
+              <Plus className="h-5 w-5 shrink-0 text-slate-950" />
+              <span>Register Vehicle</span>
             </button>
           </div>
 
@@ -492,7 +490,7 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
                   <div className="mt-6 pt-4 border-t border-slate-800/80 flex items-center gap-2">
                     <button
                       onClick={() => setSelectedVehicleForQR(veh)}
-                      className="flex-1 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border border-slate-700 transition"
+                      className="flex-1 py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 border border-slate-700 transition"
                     >
                       <QrCode size={16} className="text-blue-400" />
                       <span>Security Badge</span>
@@ -504,7 +502,7 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
                           deleteVehicleMutation.mutate(veh.id);
                         }
                       }}
-                      className="p-2.5 rounded-xl bg-slate-950 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-800 transition"
+                      className="p-3 rounded-xl bg-slate-950 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-800 transition"
                       title="Remove Vehicle"
                     >
                       <Trash2 size={16} />

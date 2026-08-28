@@ -128,17 +128,17 @@ export default function StaffPortalScreen() {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      {/* Top Large Header */}
+      {/* Top Header */}
       <View style={styles.topHeader}>
         <View style={styles.headerTitleRow}>
           <View style={styles.crestBox}>
             <Text style={styles.crestText}>TU</Text>
           </View>
-          <View style={{ flex: 1 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-              <Text style={styles.mainTitle}>Thapar Staff Hub</Text>
+          <View style={{ flex: 1, paddingHorizontal: 8 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              <Text style={styles.mainTitle} numberOfLines={1}>Thapar Staff Hub</Text>
               <View style={styles.facultyPill}>
-                <Text style={styles.facultyPillText}>Faculty Console</Text>
+                <Text style={styles.facultyPillText}>Faculty</Text>
               </View>
             </View>
             <Text style={styles.facultySub} numberOfLines={1}>
@@ -208,7 +208,7 @@ export default function StaffPortalScreen() {
             {/* Faculty Permit Large Card */}
             <View style={styles.cardDark}>
               <View style={styles.cardHeaderRow}>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, paddingRight: 8 }}>
                   <Text style={styles.cardSuperTitle}>FACULTY PARKING PERMIT</Text>
                   <Text style={styles.cardBigTitle}>{user?.name || "Prof. Rajesh Sharma"}</Text>
                   <Text style={styles.cardMetaText}>
@@ -220,7 +220,7 @@ export default function StaffPortalScreen() {
                 </View>
               </View>
 
-              {/* Gate Selector Buttons */}
+              {/* 2x2 Gate Selector Grid (Never Overlaps) */}
               <View style={styles.gatePillsRow}>
                 {["Gate 1", "Gate 2", "Gate 3", "Gate 4"].map((g) => (
                   <TouchableOpacity
@@ -240,7 +240,7 @@ export default function StaffPortalScreen() {
                 ))}
               </View>
 
-              {/* 1-Tap Pulse Button (Large) */}
+              {/* 1-Tap Pulse Button */}
               <TouchableOpacity
                 style={[styles.barrierPulseBtn, triggeringBarrier && styles.btnDisabled]}
                 onPress={handleOpenBarrier}
@@ -395,7 +395,7 @@ export default function StaffPortalScreen() {
         {activeTab === "guests" && (
           <View style={styles.sectionSpace}>
             <View style={styles.tabSectionHeaderRow}>
-              <View>
+              <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.tabSectionBigTitle}>Visitor &amp; Guest Passes</Text>
                 <Text style={styles.tabSectionDesc}>
                   Pre-authorized digital passes with instant 1-scan QR entry
@@ -486,7 +486,7 @@ export default function StaffPortalScreen() {
         {activeTab === "house_helps" && (
           <View style={styles.sectionSpace}>
             <View style={styles.tabSectionHeaderRow}>
-              <View>
+              <View style={{ flex: 1, paddingRight: 8 }}>
                 <Text style={styles.tabSectionBigTitle}>Domestic Staff &amp; Maids</Text>
                 <Text style={styles.tabSectionDesc}>
                   Permanent QR passes for maids, cooks, drivers, and assistants
@@ -574,59 +574,62 @@ export default function StaffPortalScreen() {
                       ) : null}
                     </View>
 
-                    <View style={styles.itemFooterRow}>
+                    {/* 2-Row Stacked Actions (Never Collides) */}
+                    <View style={styles.itemFooterCol}>
                       <TouchableOpacity
-                        style={styles.masterQRBtn}
+                        style={styles.masterQRBtnFull}
                         onPress={() => setSelectedHelpQR(h)}
                       >
                         <Text style={styles.masterQRBtnText}>Master QR Pass</Text>
                       </TouchableOpacity>
 
-                      <TouchableOpacity
-                        style={[
-                          styles.toggleActiveBtn,
-                          {
-                            backgroundColor: isActive
-                              ? "rgba(16, 185, 129, 0.15)"
-                              : "rgba(239, 68, 68, 0.15)",
-                            borderColor: isActive ? "#10b981" : "#ef4444",
-                          },
-                        ]}
-                        onPress={() => {
-                          setHelps((prev) =>
-                            prev.map((item) =>
-                              item.id === h.id ? { ...item, isActive: !item.isActive } : item
-                            )
-                          );
-                        }}
-                      >
-                        <Text
+                      <View style={styles.helperActionsSubRow}>
+                        <TouchableOpacity
                           style={[
-                            styles.toggleActiveText,
-                            { color: isActive ? "#34d399" : "#f87171" },
-                          ]}
-                        >
-                          {isActive ? "Active" : "Paused"}
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        style={styles.trashBtn}
-                        onPress={() => {
-                          Alert.alert("Unlink Helper", `Remove ${h.name} from your quarter?`, [
-                            { text: "Cancel", style: "cancel" },
+                            styles.toggleActiveBtn,
                             {
-                              text: "Unlink",
-                              style: "destructive",
-                              onPress: () => {
-                                setHelps((prev) => prev.filter((item) => item.id !== h.id));
-                              },
+                              backgroundColor: isActive
+                                ? "rgba(16, 185, 129, 0.15)"
+                                : "rgba(239, 68, 68, 0.15)",
+                              borderColor: isActive ? "#10b981" : "#ef4444",
                             },
-                          ]);
-                        }}
-                      >
-                        <Text style={{ color: "#f87171", fontSize: 14 }}>✕</Text>
-                      </TouchableOpacity>
+                          ]}
+                          onPress={() => {
+                            setHelps((prev) =>
+                              prev.map((item) =>
+                                item.id === h.id ? { ...item, isActive: !item.isActive } : item
+                              )
+                            );
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.toggleActiveText,
+                              { color: isActive ? "#34d399" : "#f87171" },
+                            ]}
+                          >
+                            {isActive ? "Pause Clearance" : "Activate Clearance"}
+                          </Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                          style={styles.trashBtn}
+                          onPress={() => {
+                            Alert.alert("Unlink Helper", `Remove ${h.name} from your quarter?`, [
+                              { text: "Cancel", style: "cancel" },
+                              {
+                                text: "Unlink",
+                                style: "destructive",
+                                onPress: () => {
+                                  setHelps((prev) => prev.filter((item) => item.id !== h.id));
+                                },
+                              },
+                            ]);
+                          }}
+                        >
+                          <Text style={{ color: "#f87171", fontSize: 14, fontWeight: "bold" }}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   </View>
                 );
@@ -707,7 +710,7 @@ export default function StaffPortalScreen() {
         onClose={() => setShowGateScannerModal(false)}
       />
 
-      {/* 5. VEHICLE SECURITY BADGE QR MODAL (LARGE) */}
+      {/* 5. VEHICLE SECURITY BADGE QR MODAL */}
       {selectedVehicleQR && (
         <WhiteQRModal
           visible={true}
@@ -724,7 +727,7 @@ export default function StaffPortalScreen() {
         />
       )}
 
-      {/* 6. GUEST PASS QR MODAL (LARGE) */}
+      {/* 6. GUEST PASS QR MODAL */}
       {selectedPassQR && (
         <WhiteQRModal
           visible={true}
@@ -742,7 +745,7 @@ export default function StaffPortalScreen() {
         />
       )}
 
-      {/* 7. HOUSE HELP MASTER QR MODAL (LARGE) */}
+      {/* 7. HOUSE HELP MASTER QR MODAL */}
       {selectedHelpQR && (
         <WhiteQRModal
           visible={true}
@@ -764,7 +767,7 @@ export default function StaffPortalScreen() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sub-Modals (Large, Roomy, Clean)
+// Sub-Modals
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AddVehicleModal({
@@ -1453,7 +1456,7 @@ function WhiteQRModal({
           <Text style={modalStyles.whiteCrestSub}>{sub}</Text>
           <Text style={modalStyles.whiteTitle}>{title}</Text>
 
-          {/* Large 220px Vector Scannable QR Matrix */}
+          {/* Large 210px Vector Scannable QR Matrix */}
           <View style={modalStyles.qrBox}>
             <QRCode
               value={token}
@@ -1505,7 +1508,7 @@ function WhiteQRModal({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Large, Readable Styles
+// Styles
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   safeContainer: { flex: 1, backgroundColor: "#020617" },
@@ -1513,10 +1516,9 @@ const styles = StyleSheet.create({
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 14,
-    gap: 12,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
   },
   crestBox: {
     width: 44,
@@ -1529,17 +1531,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   crestText: { fontSize: 16, fontWeight: "900", color: "#f8fafc" },
-  mainTitle: { fontSize: 18, fontWeight: "900", color: "#ffffff", letterSpacing: -0.3 },
+  mainTitle: { fontSize: 17, fontWeight: "900", color: "#ffffff", letterSpacing: -0.3 },
   facultyPill: {
     backgroundColor: "#1e3a8a",
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: "#2563eb",
   },
-  facultyPillText: { color: "#bfdbfe", fontSize: 10, fontWeight: "800" },
-  facultySub: { fontSize: 13, color: "#94a3b8", marginTop: 2, fontWeight: "500" },
+  facultyPillText: { color: "#bfdbfe", fontSize: 9, fontWeight: "800" },
+  facultySub: { fontSize: 12, color: "#94a3b8", marginTop: 2, fontWeight: "500" },
   signOutBtn: {
     backgroundColor: "#0f172a",
     borderWidth: 1,
@@ -1600,13 +1602,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activePermitText: { color: "#34d399", fontSize: 10, fontWeight: "900" },
-  gatePillsRow: { flexDirection: "row", gap: 8, marginTop: 16, marginBottom: 12 },
+  gatePillsRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8, marginTop: 16, marginBottom: 12 },
   gatePill: {
-    flex: 1,
+    width: "48%",
     backgroundColor: "#020617",
     borderWidth: 1,
     borderColor: "#334155",
-    paddingVertical: 9,
+    paddingVertical: 10,
     borderRadius: 12,
     alignItems: "center",
   },
@@ -1737,6 +1739,13 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "rgba(30, 41, 59, 0.8)",
   },
+  itemFooterCol: {
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(30, 41, 59, 0.8)",
+    gap: 8,
+  },
   itemCodeMono: { fontSize: 12, color: "#64748b", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
   itemActionBtn: {
     backgroundColor: "#1e293b",
@@ -1769,11 +1778,20 @@ const styles = StyleSheet.create({
   helpDetailLine: { fontSize: 13, color: "#cbd5e1" },
   helpIdLine: { fontSize: 12, color: "#34d399", fontWeight: "700" },
   helpShiftLine: { fontSize: 12, color: "#94a3b8" },
-  masterQRBtn: { backgroundColor: "#1e293b", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10, borderWidth: 1, borderColor: "#334155" },
-  masterQRBtnText: { color: "#93c5fd", fontSize: 12, fontWeight: "800" },
-  toggleActiveBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, borderWidth: 1 },
+  masterQRBtnFull: {
+    backgroundColor: "#1e293b",
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#334155",
+    alignItems: "center",
+    width: "100%",
+  },
+  masterQRBtnText: { color: "#93c5fd", fontSize: 13, fontWeight: "800" },
+  helperActionsSubRow: { flexDirection: "row", gap: 8, alignItems: "center" },
+  toggleActiveBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: "center" },
   toggleActiveText: { fontSize: 12, fontWeight: "800" },
-  trashBtn: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10, backgroundColor: "#1e293b" },
+  trashBtn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, backgroundColor: "#1e293b", alignItems: "center" },
   noticeCard: { backgroundColor: "#0f172a", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#1e293b" },
   noticeTitle: { fontSize: 16, fontWeight: "800", color: "#ffffff", flex: 1 },
   severityTag: { backgroundColor: "rgba(245, 158, 11, 0.15)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },

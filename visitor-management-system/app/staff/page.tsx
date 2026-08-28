@@ -35,7 +35,6 @@ import {
   AlertCircle,
   Briefcase,
   Share2,
-  CheckCircle,
 } from "lucide-react";
 import StaffParkingSection from "@/components/StaffParkingSection";
 import {
@@ -161,53 +160,53 @@ function StaffConsole({ userName }: { userName: string }) {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 antialiased">
       {/* Top Professional Large Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-20 items-center justify-between gap-4">
-            <div className="flex items-center gap-3.5">
+          <div className="flex h-20 items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
               <Link
                 href="/"
-                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white transition shadow-sm"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white transition shadow-sm"
                 title="Back to Campus Portal"
               >
                 <ArrowLeft size={20} />
               </Link>
-              <div>
-                <div className="flex items-center gap-2.5">
-                  <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-lg sm:text-2xl font-extrabold text-white tracking-tight truncate">
                     Thapar Staff Hub
                   </h1>
-                  <span className="rounded-xl bg-blue-600/20 px-2.5 py-0.5 text-xs font-bold text-blue-400 border border-blue-500/30 font-mono">
+                  <span className="rounded-xl bg-blue-600/20 px-2.5 py-0.5 text-xs font-bold text-blue-400 border border-blue-500/30 font-mono shrink-0">
                     Faculty Console
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-400 font-medium hidden sm:block">
+                <p className="text-xs sm:text-sm text-slate-400 font-medium hidden sm:block truncate">
                   Campus Parking, Visitor Passes &amp; Domestic Staff Clearance
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="hidden md:flex items-center gap-2 text-sm text-slate-300 bg-slate-900 border border-slate-800 px-4 py-2 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div className="hidden lg:flex items-center gap-2 text-sm text-slate-300 bg-slate-900 border border-slate-800 px-4 py-2 rounded-2xl shadow-sm">
                 <User size={16} className="text-blue-400" />
                 <span className="font-bold text-white">{userName}</span>
               </div>
 
               <button
                 onClick={() => signOut({ callbackUrl: "/staff" })}
-                className="flex items-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition shadow-sm"
+                className="flex items-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3.5 sm:px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition shadow-sm shrink-0"
               >
                 <LogOut size={16} />
-                <span>Sign Out</span>
+                <span className="hidden sm:inline">Sign Out</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Large 4-Tab Navigation Ribbon */}
-        <div className="border-t border-slate-800/90 bg-slate-950/70">
+        {/* Large 4-Tab Navigation Ribbon (Non-shrinking pills) */}
+        <div className="border-t border-slate-800/90 bg-slate-950/80">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <nav className="flex space-x-3 overflow-x-auto py-2.5 no-scrollbar">
+            <nav className="flex space-x-2.5 overflow-x-auto py-2.5 no-scrollbar">
               {[
                 { id: "parking", label: "Parking & Access", icon: Car, count: carsCount },
                 { id: "guests", label: "Visitor Passes", icon: QrCode, count: passes.length },
@@ -220,7 +219,7 @@ function StaffConsole({ userName }: { userName: string }) {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as StaffTab)}
-                    className={`flex items-center gap-2.5 whitespace-nowrap rounded-2xl px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-bold transition shadow-sm ${
+                    className={`flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-2xl px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-bold transition shadow-sm ${
                       active
                         ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25 border border-blue-400/30"
                         : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800/90"
@@ -245,7 +244,7 @@ function StaffConsole({ userName }: { userName: string }) {
         </div>
       </header>
 
-      {/* Main Content Area (Spacious & Roomy) */}
+      {/* Main Content Area */}
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         {/* TAB 1: PARKING & ACCESS */}
         {activeTab === "parking" && <StaffParkingSection userName={userName} />}
@@ -295,7 +294,7 @@ function StaffConsole({ userName }: { userName: string }) {
                   <button
                     key={f.id}
                     onClick={() => setGuestStatusFilter(f.id)}
-                    className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition ${
+                    className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition shrink-0 ${
                       guestStatusFilter === f.id
                         ? "bg-slate-800 text-white border border-slate-700 shadow-sm"
                         : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800/80"
@@ -371,12 +370,12 @@ function StaffConsole({ userName }: { userName: string }) {
                         )}
                       </div>
 
-                      <div className="mt-6 border-t border-slate-800/80 pt-4 flex items-center justify-between gap-2">
+                      <div className="mt-6 border-t border-slate-800/80 pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <span className="font-mono text-xs text-slate-500 font-bold">{p.token}</span>
 
                         <button
                           onClick={() => setSelectedPassForQR(p)}
-                          className="flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-200 border border-slate-700 transition"
+                          className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-200 border border-slate-700 transition"
                         >
                           <QrCode size={16} className="text-blue-400" />
                           <span>View QR Pass</span>
@@ -467,19 +466,19 @@ function StaffConsole({ userName }: { userName: string }) {
                             <img
                               src={h.helper.photoUrl}
                               alt={h.helper.name}
-                              className="h-14 w-14 rounded-2xl object-cover border border-slate-700 shadow-sm"
+                              className="h-14 w-14 rounded-2xl object-cover border border-slate-700 shadow-sm shrink-0"
                             />
                           ) : (
-                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-800 border border-slate-700 text-slate-200 font-extrabold text-lg">
+                            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-slate-800 border border-slate-700 text-slate-200 font-extrabold text-lg">
                               {h.helper.name.slice(0, 2).toUpperCase()}
                             </div>
                           )}
 
-                          <div>
-                            <h4 className="text-lg font-bold text-white tracking-tight">
+                          <div className="min-w-0">
+                            <h4 className="text-lg font-bold text-white tracking-tight truncate">
                               {h.helper.name}
                             </h4>
-                            <div className="text-xs sm:text-sm text-slate-400 font-mono">
+                            <div className="text-xs sm:text-sm text-slate-400 font-mono truncate">
                               +91 {h.helper.phone}
                             </div>
                           </div>
@@ -499,45 +498,48 @@ function StaffConsole({ userName }: { userName: string }) {
                         </div>
                       </div>
 
-                      <div className="mt-6 border-t border-slate-800/80 pt-4 flex items-center justify-between gap-2">
+                      {/* Clean 2-Row Action Box (Guaranteed No Overlap) */}
+                      <div className="mt-6 border-t border-slate-800/80 pt-4 space-y-2.5">
                         <button
                           onClick={() => setSelectedHelpForQR(h)}
-                          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-200 border border-slate-700 transition"
+                          className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-200 border border-slate-700 transition"
                         >
                           <QrCode size={16} className="text-blue-400" />
                           <span>Master Pass</span>
                         </button>
 
-                        <button
-                          onClick={async () => {
-                            try {
-                              await updateStaffHouseHelp(h.linkId, { isActive: !isActive });
-                              queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
-                            } catch (e: any) {
-                              alert(e.message);
-                            }
-                          }}
-                          className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition ${
-                            isActive
-                              ? "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
-                              : "bg-emerald-950/60 text-emerald-300 border-emerald-800/60"
-                          }`}
-                        >
-                          {isActive ? "Pause" : "Activate"}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={async () => {
+                              try {
+                                await updateStaffHouseHelp(h.linkId, { isActive: !isActive });
+                                queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
+                              } catch (e: any) {
+                                alert(e.message);
+                              }
+                            }}
+                            className={`flex-1 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition ${
+                              isActive
+                                ? "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
+                                : "bg-emerald-950/60 text-emerald-300 border-emerald-800/60"
+                            }`}
+                          >
+                            {isActive ? "Pause Clearance" : "Activate Clearance"}
+                          </button>
 
-                        <button
-                          onClick={async () => {
-                            if (confirm(`Unlink helper ${h.helper.name} from your quarter?`)) {
-                              await deleteStaffHouseHelp(h.linkId);
-                              queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
-                            }
-                          }}
-                          className="p-2.5 rounded-xl bg-slate-950 hover:bg-rose-950/60 text-slate-500 hover:text-rose-400 border border-slate-800 transition"
-                          title="Unlink Staff"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                          <button
+                            onClick={async () => {
+                              if (confirm(`Unlink helper ${h.helper.name} from your quarter?`)) {
+                                await deleteStaffHouseHelp(h.linkId);
+                                queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
+                              }
+                            }}
+                            className="p-2.5 rounded-xl bg-slate-950 hover:bg-rose-950/60 text-slate-500 hover:text-rose-400 border border-slate-800 transition shrink-0"
+                            title="Unlink Staff"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -610,7 +612,7 @@ function StaffConsole({ userName }: { userName: string }) {
         )}
       </main>
 
-      {/* 1. Create Guest Pass Modal (Large & Roomy) */}
+      {/* 1. Create Guest Pass Modal */}
       {showCreatePassModal && (
         <CreateGuestPassModal
           onClose={() => setShowCreatePassModal(false)}
@@ -622,7 +624,7 @@ function StaffConsole({ userName }: { userName: string }) {
         />
       )}
 
-      {/* 2. Add Domestic Staff Modal (Large & Roomy) */}
+      {/* 2. Add Domestic Staff Modal */}
       {showAddHelpModal && (
         <AddDomesticStaffModal
           onClose={() => setShowAddHelpModal(false)}
@@ -634,7 +636,7 @@ function StaffConsole({ userName }: { userName: string }) {
         />
       )}
 
-      {/* 3. Universal Vector QR Modal for Guest Passes (Large & High-Contrast) */}
+      {/* 3. Universal Vector QR Modal for Guest Passes */}
       {selectedPassForQR && (
         <UniversalQRModal
           title="Official Visitor Gate Pass"
@@ -652,7 +654,7 @@ function StaffConsole({ userName }: { userName: string }) {
         />
       )}
 
-      {/* 4. Universal Vector QR Modal for Domestic Staff (Large & High-Contrast) */}
+      {/* 4. Universal Vector QR Modal for Domestic Staff */}
       {selectedHelpForQR && (
         <UniversalQRModal
           title="Domestic Staff Master Pass"
@@ -674,7 +676,7 @@ function StaffConsole({ userName }: { userName: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sub-Modals (Large, Roomy, High-End UX)
+// Sub-Modals
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CreateGuestPassModal({
