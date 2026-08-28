@@ -44,7 +44,6 @@ import {
 } from "@/lib/api";
 import { categoryColor } from "@/lib/categoryColors";
 import { playGuardSound } from "@/lib/audio";
-import GuardAnprFeed from "@/components/GuardAnprFeed";
 
 // ===========================================================================
 // Auth wrapper (unchanged) — routes STAFF/HEAD to their portals; GUARD → console.
@@ -196,7 +195,7 @@ function LoginScreen() {
 // ===========================================================================
 // Console — exactly two tabs.
 // ===========================================================================
-type Tab = "requests" | "inside" | "past" | "scan" | "anpr";
+type Tab = "requests" | "inside" | "past" | "scan";
 
 function Console() {
   const { data: session } = useSession();
@@ -440,7 +439,7 @@ function Console() {
           </div>
         )}
 
-        {/* Five tabs now (Requests, Inside, Past, Scan, Fast-Lane ANPR) */}
+        {/* Four tabs (Requests, Inside, Past, Scan) */}
         <div className="mx-auto flex max-w-2xl overflow-x-auto no-scrollbar border-b border-slate-100">
           {!lockdown?.active && (
             <BigTab active={tab === "requests"} onClick={() => setTab("requests")} label="Requests" count={items.filter(i => i.state === "PENDING" && (i.kind === "VIP" || i.entryGateId === activeGateId)).length} />
@@ -450,7 +449,6 @@ function Console() {
           {!lockdown?.active && (
             <BigTab active={tab === "scan"} onClick={() => setTab("scan")} label="Scan" icon />
           )}
-          <BigTab active={tab === "anpr"} onClick={() => setTab("anpr")} label="ANPR Barrier" />
         </div>
       </header>
 
@@ -512,10 +510,6 @@ function Console() {
           onEscalate={onEscalate}
           onOpenDetails={setDetail}
         />
-      ) : tab === "anpr" ? (
-        <div className="mx-auto max-w-2xl px-4 py-4">
-          <GuardAnprFeed activeGateId={activeGateId} />
-        </div>
       ) : (
         <LiveTraffic
           items={items}
