@@ -218,12 +218,12 @@ export default function VipPassesScreen() {
       </ScrollView>
 
       {/* CREATE PASS MODAL */}
-      <Modal visible={showCreatePassModal} animationType="slide" transparent>
+      <Modal visible={showCreateModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Issue Visitor Gate Pass</Text>
-              <TouchableOpacity onPress={() => setShowCreatePassModal(false)}>
+              <TouchableOpacity onPress={() => setShowCreateModal(false)}>
                 <Text style={styles.closeIcon}>✕</Text>
               </TouchableOpacity>
             </View>
