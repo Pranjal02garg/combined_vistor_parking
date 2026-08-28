@@ -16,8 +16,12 @@ import {
   Copy,
   Check,
   Camera,
-  Layers,
   ShieldCheck,
+  Building,
+  Upload,
+  ArrowUpRight,
+  Clock,
+  Sparkles,
 } from "lucide-react";
 
 interface VehicleDTO {
@@ -27,6 +31,7 @@ interface VehicleDTO {
   vehicleType: string;
   modelName: string | null;
   isActive: boolean;
+  rcDocUrl?: string | null;
   user: {
     name: string;
     department?: string | null;
@@ -62,6 +67,7 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
   const [modelName, setModelName] = useState("");
   const [vehicleType, setVehicleType] = useState("CAR");
   const [stickerColor, setStickerColor] = useState("green");
+  const [rcDocUrl, setRcDocUrl] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [barrierStatus, setBarrierStatus] = useState<string | null>(null);
 
@@ -107,13 +113,13 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
       if (!res.ok) throw new Error(data.error || "Failed to trigger barrier");
       return data;
     },
-    onSuccess: (data) => {
-      setBarrierStatus(`✅ Barrier signal sent to ${selectedGate}! Barrier opening for 12 seconds.`);
+    onSuccess: () => {
+      setBarrierStatus(`Signal dispatched to ${selectedGate.replace("_", " ")}. Barrier open for 12 seconds.`);
       setTimeout(() => setBarrierStatus(null), 6000);
       queryClient.invalidateQueries({ queryKey: ["parkingLots"] });
     },
     onError: (err: any) => {
-      setBarrierStatus(`❌ Error: ${err.message}`);
+      setBarrierStatus(`Error: ${err.message}`);
       setTimeout(() => setBarrierStatus(null), 5000);
     },
   });
@@ -135,6 +141,7 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
       setShowAddVehicleModal(false);
       setPlateNumber("");
       setModelName("");
+      setRcDocUrl(null);
       setFormError(null);
     },
     onError: (err: any) => {
@@ -160,26 +167,25 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
   // Vehicle QR generation
   useEffect(() => {
     if (selectedVehicleForQR) {
-      const qrPayload = JSON.stringify({
-        type: "FACULTY_VEHICLE",
-        plate: selectedVehicleForQR.plateNumber,
-        owner: userName,
-        sticker: selectedVehicleForQR.stickerColor,
-      });
-      QRCode.toDataURL(qrPayload, { width: 280, margin: 2 })
+      const token = selectedVehicleForQR.plateNumber;
+      QRCode.toDataURL(token, {
+        width: 320,
+        margin: 2,
+        color: { dark: "#0f172a", light: "#ffffff" },
+      })
         .then(setQrDataUrl)
         .catch(() => setQrDataUrl(null));
     } else {
       setQrDataUrl(null);
     }
-  }, [selectedVehicleForQR, userName]);
+  }, [selectedVehicleForQR]);
 
   // Camera start/stop
   const startCamera = async () => {
     setCameraError(null);
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setCameraError("Camera is not supported on this browser.");
+        setCameraError("Camera hardware interface is unavailable in this environment.");
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -191,7 +197,7 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
         setCameraActive(true);
       }
     } catch {
-      setCameraError("Camera permission denied or camera in use.");
+      setCameraError("Camera permission was not granted.");
       setCameraActive(false);
     }
   };
@@ -215,11 +221,11 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
         body: JSON.stringify({ gateCode: gateCode.trim() }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gate QR verification failed");
-      setScanResult(`✅ ${data.message || "Gate barrier triggered successfully!"}`);
+      if (!res.ok) throw new Error(data.error || "Gate verification rejected");
+      setScanResult(`Success: ${data.message || "Gate barrier unlocked."}`);
       stopCamera();
     } catch (e: any) {
-      setScanResult(`❌ ${e.message || "QR verification failed"}`);
+      setScanResult(`Verification Failed: ${e.message || "Invalid QR"}`);
     } finally {
       setScanning(false);
     }
@@ -231,49 +237,67 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
 
   return (
     <div className="space-y-6">
-      {/* Faculty Profile & Permit Banner */}
-      <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 sm:p-6 shadow-sm">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+      {/* Faculty Permit & Access Management Hero */}
+      <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-5 sm:p-7 shadow-lg backdrop-blur-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-3 py-0.5 text-xs font-semibold text-emerald-400 border border-emerald-500/20">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Permit Active
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-950/60 px-3 py-0.5 text-xs font-semibold text-emerald-400 border border-emerald-800/60">
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                Permit Active
               </span>
-              <span className="rounded-md bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300 border border-slate-700 font-mono">
+              <span className="rounded-md bg-slate-800/80 px-2 py-0.5 text-[11px] font-semibold text-slate-300 border border-slate-700 font-mono">
                 ANPR Fast-Lane
               </span>
             </div>
 
-            <h2 className="mt-2 text-lg sm:text-xl font-bold text-white tracking-tight">
+            <h2 className="mt-2.5 text-xl sm:text-2xl font-bold text-white tracking-tight">
               {userName}
             </h2>
-            <p className="text-xs text-slate-400 mt-0.5">
-              🏢 {userProfile?.department || "Department of Computer Science"} • {userProfile?.facultyId ? `Faculty ID: #${userProfile.facultyId}` : "Faculty Permit"}
-            </p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-400 mt-1">
+              <span className="flex items-center gap-1.5">
+                <Building className="h-3.5 w-3.5 text-slate-500" />
+                {userProfile?.department || "Department of Computer Science"}
+              </span>
+              <span className="text-slate-600">•</span>
+              <span className="font-mono text-slate-300">
+                {userProfile?.facultyId ? `ID: #${userProfile.facultyId}` : "Faculty Member"}
+              </span>
+            </div>
           </div>
 
-          <div className="text-right text-xs text-slate-400 border-l border-slate-800 pl-4">
-            <div className="font-semibold text-slate-300">Permit Validity</div>
-            <div className="text-emerald-400 font-mono font-bold mt-0.5">
+          <div className="sm:text-right text-xs text-slate-400 sm:border-l sm:border-slate-800 sm:pl-6 pt-3 sm:pt-0 border-t border-slate-800 sm:border-t-0">
+            <div className="text-slate-500 font-medium">Clearance Validity</div>
+            <div className="text-emerald-400 font-mono font-semibold text-sm mt-0.5">
               {userProfile?.eligibleTill ? new Date(userProfile.eligibleTill).toLocaleDateString() : "Permanent / 2027"}
             </div>
           </div>
         </div>
 
-        {/* Quick Gate Actions Bar */}
-        <div className="mt-5 pt-4 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-slate-400">Select Gate:</label>
-            <select
-              value={selectedGate}
-              onChange={(e) => setSelectedGate(e.target.value)}
-              className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-1.5 text-xs text-white focus:outline-none font-mono"
-            >
-              <option value="GATE_1">Gate 1 (Main Entrance)</option>
-              <option value="GATE_2">Gate 2 (South Academic)</option>
-              <option value="GATE_3">Gate 3 (Hostel &amp; Sports)</option>
-              <option value="GATE_4">Gate 4 (Faculty Quarters)</option>
-            </select>
+        {/* Gate Control & Barrier Pulse Toolbar */}
+        <div className="mt-6 pt-5 border-t border-slate-800/90 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <span className="text-xs font-semibold text-slate-400 whitespace-nowrap">Gate Barrier:</span>
+            <div className="grid grid-cols-2 sm:flex sm:items-center gap-1.5">
+              {[
+                { id: "GATE_1", label: "Gate 1 (Main)" },
+                { id: "GATE_2", label: "Gate 2 (Faculty)" },
+                { id: "GATE_3", label: "Gate 3 (Hostel)" },
+                { id: "GATE_4", label: "Gate 4 (Quarters)" },
+              ].map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => setSelectedGate(g.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
+                    selectedGate === g.id
+                      ? "bg-indigo-600 text-white font-semibold shadow-sm"
+                      : "bg-slate-950 text-slate-400 hover:text-slate-200 border border-slate-800"
+                  }`}
+                >
+                  {g.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -282,166 +306,92 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
                 setShowScannerModal(true);
                 startCamera();
               }}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 hover:bg-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-200 transition shadow-sm"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 px-3.5 py-2 text-xs font-semibold text-slate-200 transition"
             >
-              <Camera className="h-3.5 w-3.5 text-slate-400" /> Scan Gate QR
+              <Camera className="h-3.5 w-3.5 text-slate-400" />
+              <span>Scan Barrier QR</span>
             </button>
 
             <button
               onClick={() => barrierMutation.mutate(selectedGate)}
               disabled={barrierMutation.isPending}
-              className="flex items-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
             >
               {barrierMutation.isPending ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 <DoorOpen className="h-3.5 w-3.5" />
               )}
-              Open Barrier
+              <span>1-Tap Open Gate</span>
             </button>
 
             <button
               onClick={() => setShowAddVehicleModal(true)}
-              className="flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 px-3.5 py-2 text-xs font-bold transition"
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 px-3.5 py-2 text-xs font-bold transition shadow-sm"
             >
-              <Plus className="h-3.5 w-3.5" /> Register Vehicle
+              <Plus className="h-3.5 w-3.5 text-slate-900" />
+              <span>Register Vehicle</span>
             </button>
           </div>
         </div>
 
         {barrierStatus && (
-          <div className="mt-3 rounded-xl bg-slate-950 border border-slate-800 p-2.5 text-xs font-semibold text-slate-200">
-            {barrierStatus}
+          <div className="mt-3.5 rounded-xl bg-slate-950 border border-slate-800 p-3 text-xs font-medium text-slate-300 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
+            <span>{barrierStatus}</span>
           </div>
         )}
       </div>
 
-      {/* My Registered Vehicles */}
+      {/* Live Campus Parking Occupancy Meters */}
       <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            My Registered Vehicles ({vehicles.length})
-          </h3>
-          <button
-            onClick={() => setShowAddVehicleModal(true)}
-            className="text-xs font-semibold text-slate-300 hover:text-white"
-          >
-            + Add Another Vehicle
-          </button>
+        <div className="flex items-center justify-between mb-3 px-0.5">
+          <div>
+            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Campus Parking Availability
+            </h3>
+            <p className="text-[11px] text-slate-500">Live zone occupancy sync</p>
+          </div>
+          <span className="text-[11px] text-slate-400 font-mono">10s auto-refresh</span>
         </div>
 
-        {vehicles.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 p-8 text-center">
-            <Car className="mx-auto h-8 w-8 text-slate-600" />
-            <p className="mt-2 text-xs text-slate-400">No vehicles registered under your faculty account.</p>
-            <button
-              onClick={() => setShowAddVehicleModal(true)}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 px-3.5 py-2 text-xs font-bold"
-            >
-              <Plus className="h-3.5 w-3.5" /> Register Your Vehicle
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
-            {vehicles.map((veh) => {
-              const stickerBg =
-                veh.stickerColor === "green"
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  : veh.stickerColor === "blue"
-                  ? "bg-slate-800 text-slate-300 border-slate-700"
-                  : "bg-rose-500/10 text-rose-400 border-rose-500/20";
-
-              return (
-                <div
-                  key={veh.id}
-                  className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm transition hover:border-slate-700"
-                >
-                  <div className="flex items-start justify-between">
-                    <span className="font-mono text-base font-bold tracking-wider text-white">
-                      {veh.plateNumber}
-                    </span>
-                    <span
-                      className={`rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase ${stickerBg}`}
-                    >
-                      {veh.stickerColor} Sticker
-                    </span>
-                  </div>
-
-                  <div className="mt-1 text-xs text-slate-400">
-                    <span className="font-medium text-slate-300">{veh.modelName || veh.vehicleType}</span>
-                  </div>
-
-                  <div className="mt-3.5 flex items-center justify-between border-t border-slate-800/80 pt-2.5 gap-2">
-                    <button
-                      onClick={() => setSelectedVehicleForQR(veh)}
-                      className="flex-1 py-1 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1 border border-slate-700 transition"
-                    >
-                      <QrCode size={13} />
-                      <span>Security Badge</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (confirm(`Remove vehicle ${veh.plateNumber}?`)) {
-                          deleteVehicleMutation.mutate(veh.id);
-                        }
-                      }}
-                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700 transition"
-                      title="Remove Vehicle"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Live Campus Parking Lots Meter */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-            Campus Parking Availability
-          </h3>
-          <span className="text-xs text-slate-500">Live 10s sync</span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {lots.map((lot) => {
             const percent = lot.occupancyPercentage;
+            const isFull = percent >= 90;
+            const isMedium = percent >= 70 && percent < 90;
+
             return (
               <div
                 key={lot.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900 p-4 shadow-sm"
+                className="rounded-2xl border border-slate-800/90 bg-slate-900/80 p-4 shadow-sm transition hover:border-slate-700"
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-300 uppercase border border-slate-700">
+                    <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-bold text-slate-300 uppercase font-mono border border-slate-700/80">
                       Zone {lot.zone}
                     </span>
-                    <h4 className="mt-1 text-sm font-bold text-white">{lot.name}</h4>
+                    <h4 className="mt-1 text-sm font-semibold text-white tracking-tight">{lot.name}</h4>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-black text-emerald-400">{lot.freeSlots}</div>
+                    <div className="text-lg font-bold text-emerald-400 font-mono">{lot.freeSlots}</div>
                     <div className="text-[10px] uppercase font-semibold text-slate-500">Free Slots</div>
                   </div>
                 </div>
 
-                <div className="mt-3 space-y-1">
-                  <div className="flex justify-between text-[11px] text-slate-400">
+                <div className="mt-3.5 space-y-1.5">
+                  <div className="flex justify-between text-[11px] text-slate-400 font-mono">
                     <span>Occupancy</span>
-                    <span className="font-semibold text-slate-300">
+                    <span className="font-semibold text-slate-200">
                       {lot.occupied} / {lot.totalCapacity} ({percent}%)
                     </span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
-                        percent >= 90
+                        isFull
                           ? "bg-rose-500"
-                          : percent >= 70
+                          : isMedium
                           ? "bg-amber-500"
                           : "bg-emerald-500"
                       }`}
@@ -455,200 +405,395 @@ export default function StaffParkingSection({ userName }: { userName: string }) 
         </div>
       </div>
 
-      {/* Modal: Add Vehicle */}
+      {/* Faculty Registered Vehicles List */}
+      <div>
+        <div className="flex items-center justify-between mb-3 px-0.5">
+          <div>
+            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
+              Registered Faculty Vehicles ({vehicles.length})
+            </h3>
+            <p className="text-[11px] text-slate-500">Configured for Fast-Lane ANPR Gate Barriers</p>
+          </div>
+          <button
+            onClick={() => setShowAddVehicleModal(true)}
+            className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition"
+          >
+            + Register Vehicle
+          </button>
+        </div>
+
+        {vehicles.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 p-8 text-center">
+            <Car className="mx-auto h-8 w-8 text-slate-600" />
+            <p className="mt-2 text-xs text-slate-400">No vehicles registered under your account.</p>
+            <button
+              onClick={() => setShowAddVehicleModal(true)}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 px-3.5 py-2 text-xs font-bold"
+            >
+              <Plus className="h-3.5 w-3.5 text-slate-900" /> Register Vehicle
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {vehicles.map((veh) => {
+              const isGreen = veh.stickerColor === "green";
+              const isBlue = veh.stickerColor === "blue";
+
+              return (
+                <div
+                  key={veh.id}
+                  className="rounded-2xl border border-slate-800/90 bg-slate-900/80 p-4 shadow-sm transition hover:border-slate-700 flex flex-col justify-between"
+                >
+                  <div>
+                    <div className="flex items-start justify-between">
+                      <span className="font-mono text-base font-bold tracking-wider text-white">
+                        {veh.plateNumber}
+                      </span>
+                      <span
+                        className={`rounded-md border px-2 py-0.5 text-[10px] font-bold uppercase font-mono ${
+                          isGreen
+                            ? "bg-emerald-950/60 text-emerald-400 border-emerald-800/60"
+                            : isBlue
+                            ? "bg-slate-800 text-slate-300 border-slate-700"
+                            : "bg-rose-950/60 text-rose-400 border-rose-800/60"
+                        }`}
+                      >
+                        {veh.stickerColor} Tier
+                      </span>
+                    </div>
+
+                    <div className="mt-1 text-xs text-slate-400">
+                      <span className="font-medium text-slate-300">{veh.modelName || veh.vehicleType}</span>
+                    </div>
+
+                    {veh.rcDocUrl && (
+                      <div className="mt-2 flex items-center gap-1 text-[11px] text-emerald-400">
+                        <CheckCircle2 size={12} />
+                        <span>RC Document Verified</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-between border-t border-slate-800/80 pt-3 gap-2">
+                    <button
+                      onClick={() => setSelectedVehicleForQR(veh)}
+                      className="flex-1 py-1.5 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition"
+                    >
+                      <QrCode size={13} className="text-slate-400" />
+                      <span>Security Badge</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (confirm(`Remove vehicle ${veh.plateNumber}?`)) {
+                          deleteVehicleMutation.mutate(veh.id);
+                        }
+                      }}
+                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 transition"
+                      title="Remove Vehicle"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 1. Register Vehicle Modal */}
       {showAddVehicleModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Car className="h-4 w-4 text-slate-400" /> Register Vehicle
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white tracking-tight">Register Campus Vehicle</h3>
               <button
                 onClick={() => setShowAddVehicleModal(false)}
-                className="text-slate-400 hover:text-white"
+                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
               >
-                <X className="h-5 w-5" />
+                <X size={16} />
               </button>
             </div>
 
             {formError && (
-              <div className="mb-4 rounded-xl bg-rose-500/10 border border-rose-500/20 p-2.5 text-xs text-rose-400 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 shrink-0" /> {formError}
+              <div className="rounded-xl bg-rose-950/60 border border-rose-800/60 p-3 text-xs text-rose-300 flex items-center gap-2">
+                <AlertCircle size={14} className="shrink-0" />
+                <span>{formError}</span>
               </div>
             )}
 
             <div className="space-y-3.5">
               <div>
-                <label className="text-xs font-semibold text-slate-300 mb-1 block">
-                  License Plate Number *
+                <label className="text-xs font-semibold text-slate-400">Vehicle Type</label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  {[
+                    { id: "CAR", label: "Car" },
+                    { id: "BIKE", label: "Two-Wheeler" },
+                    { id: "EV", label: "Electric EV" },
+                  ].map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => setVehicleType(t.id)}
+                      className={`py-2 px-3 rounded-xl text-xs font-semibold transition ${
+                        vehicleType === t.id
+                          ? "bg-indigo-600 text-white shadow-sm"
+                          : "bg-slate-950 text-slate-400 border border-slate-800 hover:border-slate-700"
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-slate-400">
+                  License Plate Number <span className="text-rose-400">*</span>
                 </label>
                 <input
                   type="text"
+                  placeholder="e.g. PB11BH8820"
                   value={plateNumber}
                   onChange={(e) => setPlateNumber(e.target.value.toUpperCase())}
-                  placeholder="e.g. PB11BH8820"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 p-2.5 font-mono text-xs uppercase text-white focus:border-slate-600 focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 font-mono focus:border-indigo-500 focus:outline-none uppercase"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-slate-300 mb-1 block">Vehicle Model &amp; Color</label>
+                <label className="text-xs font-semibold text-slate-400">Make, Model &amp; Color</label>
                 <input
                   type="text"
+                  placeholder="e.g. Honda City (White)"
                   value={modelName}
                   onChange={(e) => setModelName(e.target.value)}
-                  placeholder="e.g. Honda City (White)"
-                  className="w-full rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-xs text-white focus:border-slate-600 focus:outline-none"
+                  className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-indigo-500 focus:outline-none"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 mb-1 block">Vehicle Type</label>
-                  <select
-                    value={vehicleType}
-                    onChange={(e) => setVehicleType(e.target.value)}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-xs text-white focus:border-slate-600 focus:outline-none"
-                  >
-                    <option value="CAR">Car</option>
-                    <option value="BIKE">Two-Wheeler / Bike</option>
-                    <option value="EV">Electric Vehicle (EV)</option>
-                  </select>
+              <div>
+                <label className="text-xs font-semibold text-slate-400">Sticker Tier</label>
+                <div className="grid grid-cols-3 gap-2 mt-1">
+                  {["green", "blue", "red"].map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setStickerColor(c)}
+                      className={`py-1.5 px-3 rounded-xl text-xs font-bold uppercase font-mono transition ${
+                        stickerColor === c
+                          ? "bg-slate-800 text-white border-2 border-indigo-500 shadow-sm"
+                          : "bg-slate-950 text-slate-400 border border-slate-800"
+                      }`}
+                    >
+                      {c} Tier
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-300 mb-1 block">Sticker Tier</label>
-                  <select
-                    value={stickerColor}
-                    onChange={(e) => setStickerColor(e.target.value)}
-                    className="w-full rounded-xl border border-slate-800 bg-slate-950 p-2.5 text-xs text-white focus:border-slate-600 focus:outline-none"
-                  >
-                    <option value="green">Green (Full Access)</option>
-                    <option value="blue">Blue (Zone Restricted)</option>
-                    <option value="red">Red (Warning)</option>
-                  </select>
-                </div>
+              <div>
+                <label className="text-xs font-semibold text-slate-400">Vehicle Registration Certificate (RC)</label>
+                {rcDocUrl ? (
+                  <div className="mt-1 flex items-center justify-between p-2.5 rounded-xl border border-emerald-800/60 bg-emerald-950/40 text-xs text-emerald-300">
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle2 size={14} /> Document Attached
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setRcDocUrl(null)}
+                      className="text-slate-400 hover:text-rose-400"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="mt-1 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-3 text-xs text-slate-400 hover:border-slate-600 hover:text-slate-300 transition">
+                    <Upload size={14} />
+                    <span>Upload RC Document Scan (JPG/PNG)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => setRcDocUrl(reader.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                    />
+                  </label>
+                )}
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end gap-2.5 pt-3 border-t border-slate-800">
+            <div className="mt-5 flex items-center justify-end gap-2.5 border-t border-slate-800 pt-4">
               <button
+                type="button"
                 onClick={() => setShowAddVehicleModal(false)}
-                className="rounded-xl border border-slate-800 bg-slate-950 px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800"
+                className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
               >
                 Cancel
               </button>
               <button
+                type="button"
+                disabled={addVehicleMutation.isPending || !plateNumber.trim()}
                 onClick={() =>
                   addVehicleMutation.mutate({
-                    plateNumber,
-                    modelName,
+                    plateNumber: plateNumber.trim(),
+                    modelName: modelName.trim() || undefined,
                     vehicleType,
                     stickerColor,
+                    rcDocUrl,
                   })
                 }
-                disabled={!plateNumber || addVehicleMutation.isPending}
-                className="rounded-xl bg-slate-100 hover:bg-white text-slate-900 px-4 py-2 text-xs font-bold disabled:opacity-50 transition"
+                className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2 text-xs font-bold text-white shadow-sm transition disabled:opacity-50"
               >
-                {addVehicleMutation.isPending ? "Registering..." : "Add Vehicle"}
+                {addVehicleMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                Save Vehicle
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal: Scan Gate QR */}
+      {/* 2. Vehicle Security Badge QR Modal */}
+      {selectedVehicleForQR && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-slate-900 text-center relative space-y-4">
+            <button
+              onClick={() => setSelectedVehicleForQR(null)}
+              className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+            >
+              <X size={16} />
+            </button>
+
+            <div>
+              <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 font-mono">
+                THAPAR UNIVERSITY FAST-LANE
+              </div>
+              <h3 className="text-lg font-black text-slate-900 mt-0.5">Vehicle Security Badge</h3>
+            </div>
+
+            <div className="mx-auto flex justify-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+              {qrDataUrl ? (
+                <img src={qrDataUrl} alt="Vehicle QR" className="h-44 w-44 rounded-lg" />
+              ) : (
+                <div className="flex h-44 w-44 items-center justify-center text-xs text-slate-400">
+                  <Loader2 className="animate-spin" />
+                </div>
+              )}
+            </div>
+
+            <div className="font-mono text-base font-black text-indigo-700 tracking-wider">
+              {selectedVehicleForQR.plateNumber}
+            </div>
+
+            <div className="rounded-xl bg-slate-50 p-3 text-left text-xs space-y-1.5 border border-slate-100">
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">Owner:</span>
+                <span className="font-bold text-slate-900">{userName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">Model:</span>
+                <span className="font-semibold text-slate-800">
+                  {selectedVehicleForQR.modelName || selectedVehicleForQR.vehicleType}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500 font-medium">Permit Tier:</span>
+                <span className="font-mono font-bold uppercase text-slate-900">
+                  {selectedVehicleForQR.stickerColor} Tier
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(selectedVehicleForQR.plateNumber);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+              >
+                {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+                <span>{copied ? "Copied" : "Copy Plate"}</span>
+              </button>
+
+              {qrDataUrl && (
+                <a
+                  href={qrDataUrl}
+                  download={`Badge_${selectedVehicleForQR.plateNumber}.png`}
+                  className="flex-1 py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition"
+                >
+                  <ArrowUpRight size={14} />
+                  <span>Download Badge</span>
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. Gate Camera Scanner Modal */}
       {showScannerModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl text-center">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Camera className="h-4 w-4" /> Scan Physical Gate QR
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Camera size={16} className="text-blue-400" />
+                <span>Gate Barrier Camera Scanner</span>
               </h3>
               <button
                 onClick={() => {
                   stopCamera();
                   setShowScannerModal(false);
                 }}
-                className="text-slate-400 hover:text-white"
+                className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
               >
-                <X className="h-5 w-5" />
+                <X size={16} />
               </button>
             </div>
 
-            <p className="text-xs text-slate-400 mb-3">
-              Point your camera at the QR code posted at the gate booth to trigger the barrier.
-            </p>
-
-            <div className="relative aspect-square max-w-[260px] mx-auto bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden mb-3 flex items-center justify-center">
-              <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
-              {!cameraActive && (
-                <div className="text-xs text-slate-500 p-4">
-                  {cameraError || "Camera inactive. Enter gate code below."}
+            {cameraError ? (
+              <div className="rounded-xl bg-rose-950/60 border border-rose-800/60 p-3 text-xs text-rose-300">
+                {cameraError}
+              </div>
+            ) : (
+              <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black border border-slate-800">
+                <video ref={videoRef} className="h-full w-full object-cover" />
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="h-32 w-32 rounded-lg border-2 border-blue-500/80 shadow-lg" />
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             {scanResult && (
-              <div className="mb-3 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200">
+              <div className="rounded-xl bg-slate-950 border border-slate-800 p-3 text-xs font-semibold text-slate-200 text-center">
                 {scanResult}
               </div>
             )}
 
-            <div className="flex gap-2 justify-center">
-              {["GATE_1", "GATE_2", "GATE_3", "GATE_4"].map((g) => (
-                <button
-                  key={g}
-                  onClick={() => handleScanGateCode(g)}
-                  disabled={scanning}
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-bold text-slate-300 font-mono transition"
-                >
-                  {g}
-                </button>
-              ))}
+            <div>
+              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                Quick Gate Emulators
+              </div>
+              <div className="grid grid-cols-4 gap-2">
+                {["GATE_1", "GATE_2", "GATE_3", "GATE_4"].map((g) => (
+                  <button
+                    key={g}
+                    disabled={scanning}
+                    onClick={() => handleScanGateCode(g)}
+                    className="py-2 px-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs font-mono font-bold text-slate-300 transition"
+                  >
+                    {g.replace("_", " ")}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal: Vehicle Security Badge QR */}
-      {selectedVehicleForQR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl text-center">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-white">Vehicle Digital Security Badge</h3>
-              <button onClick={() => setSelectedVehicleForQR(null)} className="text-slate-400 hover:text-white">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <div className="bg-white p-4 rounded-xl inline-block shadow-inner mb-4">
-              {qrDataUrl ? (
-                <img src={qrDataUrl} alt="Vehicle QR" className="w-48 h-48 mx-auto" />
-              ) : (
-                <div className="w-48 h-48 flex items-center justify-center">
-                  <Loader2 className="animate-spin text-slate-800" size={28} />
-                </div>
-              )}
-            </div>
-
-            <div className="font-mono text-base font-bold text-white">
-              {selectedVehicleForQR.plateNumber}
-            </div>
-            <p className="text-xs text-slate-400 mt-0.5">{selectedVehicleForQR.modelName || selectedVehicleForQR.vehicleType}</p>
-            <p className="text-[11px] text-slate-500 mt-1">Authorized Faculty Permit • Gate Fast-Lane Pass</p>
-
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(selectedVehicleForQR.plateNumber);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2500);
-              }}
-              className="mt-4 w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5"
-            >
-              {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
-              <span>{copied ? "Copied Plate!" : "Copy License Plate"}</span>
-            </button>
           </div>
         </div>
       )}

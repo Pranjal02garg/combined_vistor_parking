@@ -26,12 +26,12 @@ import { api } from "../services/api";
 type StaffTab = "parking" | "guests" | "house_helps" | "notices";
 
 const SERVICE_CATEGORIES = [
-  { id: "MAID", label: "Maid / Domestic Help", icon: "🧹" },
-  { id: "COOK", label: "Cook / Chef", icon: "🍳" },
-  { id: "DRIVER", label: "Driver", icon: "🚗" },
-  { id: "CLEANER", label: "Cleaner", icon: "🧼" },
-  { id: "GARDENER", label: "Gardener", icon: "🌱" },
-  { id: "OTHER", label: "Other Staff", icon: "👤" },
+  { id: "MAID", label: "Maid / Domestic Help" },
+  { id: "COOK", label: "Cook / Chef" },
+  { id: "DRIVER", label: "Driver" },
+  { id: "CLEANER", label: "Cleaner" },
+  { id: "GARDENER", label: "Gardener" },
+  { id: "OTHER", label: "Other Domestic Staff" },
 ];
 
 const ID_PROOF_TYPES = [
@@ -39,13 +39,13 @@ const ID_PROOF_TYPES = [
   { id: "VOTER_ID", label: "Voter ID Card" },
   { id: "DRIVING_LICENSE", label: "Driving License" },
   { id: "PASSPORT", label: "Passport" },
-  { id: "OTHER", label: "Other Govt Photo ID" },
+  { id: "OTHER", label: "Govt Photo ID" },
 ];
 
 const VEHICLE_TYPES = [
-  { id: "CAR", label: "Car (4-Wheeler)", icon: "🚗" },
-  { id: "BIKE", label: "Motorcycle / Scooter (2-Wheeler)", icon: "🛵" },
-  { id: "EV", label: "Electric Vehicle (EV)", icon: "⚡" },
+  { id: "CAR", label: "Car" },
+  { id: "BIKE", label: "Two-Wheeler" },
+  { id: "EV", label: "Electric EV" },
 ];
 
 export default function StaffPortalScreen() {
@@ -100,7 +100,7 @@ export default function StaffPortalScreen() {
           title: "Annual Faculty Parking Sticker Verification",
           severity: "MEDIUM",
           createdAt: new Date().toISOString(),
-          description: "All faculty vehicles must verify their Fast-Lane ANPR / RFID sticker at Gate 1 security office.",
+          description: "All faculty vehicles must verify their Fast-Lane ANPR RFID sticker at Gate 1 security office.",
           resolution: "Active notice for Faculty Residence Block B.",
         },
       ]);
@@ -116,10 +116,10 @@ export default function StaffPortalScreen() {
     try {
       setTriggeringBarrier(true);
       const res = await api.openBarrier();
-      setBarrierStatus(`✅ Barrier Opened at ${res.gate || selectedGate} (12s Pulse)`);
+      setBarrierStatus(`Barrier Opened at ${res.gate || selectedGate} (12s Pulse)`);
       setTimeout(() => setBarrierStatus(null), 6000);
     } catch (err: any) {
-      setBarrierStatus(`❌ ${err.message || "Failed to open barrier"}`);
+      setBarrierStatus(`Error: ${err.message || "Failed to open barrier"}`);
       setTimeout(() => setBarrierStatus(null), 5000);
     } finally {
       setTriggeringBarrier(false);
@@ -128,11 +128,11 @@ export default function StaffPortalScreen() {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      {/* Top Sticky Header */}
+      {/* Top Professional Header */}
       <View style={styles.topHeader}>
         <View style={styles.headerTitleRow}>
           <View style={styles.crestBox}>
-            <Text style={styles.crestText}>🏛️</Text>
+            <Text style={styles.crestText}>TU</Text>
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -158,10 +158,10 @@ export default function StaffPortalScreen() {
           contentContainerStyle={styles.tabsScrollContent}
         >
           {[
-            { id: "parking", label: "Parking & Access", icon: "🚗", count: cars.length },
-            { id: "guests", label: "Guest Passes", icon: "🎟️", count: passes.length },
-            { id: "house_helps", label: "House Helps & Maids", icon: "🧹", count: helps.length },
-            { id: "notices", label: "Security Notices", icon: "⚠️", count: notices.length },
+            { id: "parking", label: "Parking & Access", count: cars.length },
+            { id: "guests", label: "Guest Passes", count: passes.length },
+            { id: "house_helps", label: "Domestic Staff", count: helps.length },
+            { id: "notices", label: "Security Notices", count: notices.length },
           ].map((tab) => {
             const active = activeTab === tab.id;
             return (
@@ -171,7 +171,6 @@ export default function StaffPortalScreen() {
                 style={[styles.tabButton, active && styles.tabButtonActive]}
                 activeOpacity={0.8}
               >
-                <Text style={styles.tabIcon}>{tab.icon}</Text>
                 <Text style={[styles.tabLabel, active && styles.tabLabelActive]}>
                   {tab.label}
                 </Text>
@@ -199,7 +198,7 @@ export default function StaffPortalScreen() {
               setRefreshing(true);
               loadAllData();
             }}
-            tintColor="#818cf8"
+            tintColor="#3b82f6"
           />
         }
       >
@@ -213,11 +212,11 @@ export default function StaffPortalScreen() {
                   <Text style={styles.cardSuperTitle}>FACULTY PARKING PERMIT</Text>
                   <Text style={styles.cardBigTitle}>{user?.name || "Prof. Rajesh Sharma"}</Text>
                   <Text style={styles.cardMetaText}>
-                    🏢 {user?.department || "Computer Science"} • ID: {user?.facultyId || "FAC-4092"}
+                    {user?.department || "Computer Science"} • ID: {user?.facultyId || "FAC-4092"}
                   </Text>
                 </View>
                 <View style={styles.activePermitPill}>
-                  <Text style={styles.activePermitText}>● PERMIT ACTIVE</Text>
+                  <Text style={styles.activePermitText}>PERMIT ACTIVE</Text>
                 </View>
               </View>
 
@@ -251,12 +250,9 @@ export default function StaffPortalScreen() {
                 {triggeringBarrier ? (
                   <ActivityIndicator color="#ffffff" />
                 ) : (
-                  <View style={styles.barrierBtnInner}>
-                    <Text style={styles.barrierZap}>⚡</Text>
-                    <View>
-                      <Text style={styles.barrierPulseText}>1-Tap Open {selectedGate}</Text>
-                      <Text style={styles.barrierPulseSub}>Remote pulse • 12s opening</Text>
-                    </View>
+                  <View style={{ alignItems: "center" }}>
+                    <Text style={styles.barrierPulseText}>1-Tap Open {selectedGate}</Text>
+                    <Text style={styles.barrierPulseSub}>Remote pulse • 12s opening</Text>
                   </View>
                 )}
               </TouchableOpacity>
@@ -271,7 +267,7 @@ export default function StaffPortalScreen() {
             {/* Live Lots Availability Meter */}
             <View style={styles.blockSection}>
               <View style={styles.blockSectionHeader}>
-                <Text style={styles.blockTitle}>🅿️ Live Campus Parking Zones</Text>
+                <Text style={styles.blockTitle}>Campus Parking Zones</Text>
                 <Text style={styles.blockSub}>Auto-Refresh 10s</Text>
               </View>
 
@@ -312,7 +308,7 @@ export default function StaffPortalScreen() {
             {/* Registered Vehicles List */}
             <View style={styles.blockSection}>
               <View style={styles.blockSectionHeader}>
-                <Text style={styles.blockTitle}>🚗 Registered Vehicles ({cars.length})</Text>
+                <Text style={styles.blockTitle}>Registered Vehicles ({cars.length})</Text>
                 <TouchableOpacity onPress={() => setShowAddCarModal(true)}>
                   <Text style={styles.accentLink}>+ Register Car</Text>
                 </TouchableOpacity>
@@ -320,7 +316,6 @@ export default function StaffPortalScreen() {
 
               {cars.length === 0 ? (
                 <View style={styles.emptyBox}>
-                  <Text style={styles.emptyIcon}>🚗</Text>
                   <Text style={styles.emptyTitle}>No Vehicles Registered</Text>
                   <Text style={styles.emptySub}>Add your license plate for Fast-Lane ANPR auto-entry.</Text>
                   <TouchableOpacity
@@ -346,7 +341,7 @@ export default function StaffPortalScreen() {
                         <Text style={styles.carModelText}>{car.modelName || car.vehicleType}</Text>
                         {car.rcDocUrl && (
                           <Text style={{ fontSize: 10, color: "#34d399", marginTop: 2 }}>
-                            ✓ RC Document Attached
+                            RC Document Attached
                           </Text>
                         )}
                       </View>
@@ -373,7 +368,7 @@ export default function StaffPortalScreen() {
                             {car.stickerColor.toUpperCase()} TIER
                           </Text>
                         </View>
-                        <Text style={styles.viewBadgeHint}>▦ View QR Badge ➔</Text>
+                        <Text style={styles.viewBadgeHint}>View QR Badge</Text>
                       </View>
                     </TouchableOpacity>
                   );
@@ -387,12 +382,11 @@ export default function StaffPortalScreen() {
               onPress={() => setShowGateScannerModal(true)}
               activeOpacity={0.85}
             >
-              <Text style={{ fontSize: 24 }}>📷</Text>
-              <View style={{ flex: 1, marginLeft: 12 }}>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.scannerCardTitle}>Scan Physical Gate Barrier QR</Text>
                 <Text style={styles.scannerCardSub}>Point camera at gate barrier QR code to unlock</Text>
               </View>
-              <Text style={{ color: "#818cf8", fontSize: 16, fontWeight: "bold" }}>➔</Text>
+              <Text style={{ color: "#3b82f6", fontSize: 14, fontWeight: "bold" }}>Open</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -418,7 +412,6 @@ export default function StaffPortalScreen() {
 
             {passes.length === 0 ? (
               <View style={styles.emptyBox}>
-                <Text style={styles.emptyIcon}>🎟️</Text>
                 <Text style={styles.emptyTitle}>No Guest Passes Created</Text>
                 <Text style={styles.emptySub}>
                   Issue self-cleared digital gate passes. Visitors scan QR at Gates 1–4.
@@ -446,15 +439,15 @@ export default function StaffPortalScreen() {
                           {
                             backgroundColor: isCheckedIn
                               ? "rgba(16, 185, 129, 0.15)"
-                              : "rgba(99, 102, 241, 0.15)",
-                            borderColor: isCheckedIn ? "#10b981" : "#6366f1",
+                              : "rgba(59, 130, 246, 0.15)",
+                            borderColor: isCheckedIn ? "#10b981" : "#3b82f6",
                           },
                         ]}
                       >
                         <Text
                           style={[
                             styles.statusTagText,
-                            { color: isCheckedIn ? "#34d399" : "#818cf8" },
+                            { color: isCheckedIn ? "#34d399" : "#60a5fa" },
                           ]}
                         >
                           {isCheckedIn ? "● On Campus" : p.status}
@@ -464,12 +457,12 @@ export default function StaffPortalScreen() {
 
                     <Text style={styles.itemName}>{p.guestName}</Text>
                     {p.guestPhone ? (
-                      <Text style={styles.itemPhone}>📞 +91 {p.guestPhone}</Text>
+                      <Text style={styles.itemPhone}>+91 {p.guestPhone}</Text>
                     ) : null}
 
                     {p.vehicleNumber ? (
                       <View style={styles.vehiclePlateTag}>
-                        <Text style={styles.vehiclePlateTagText}>🚗 {p.vehicleNumber}</Text>
+                        <Text style={styles.vehiclePlateTagText}>{p.vehicleNumber}</Text>
                       </View>
                     ) : null}
 
@@ -479,7 +472,7 @@ export default function StaffPortalScreen() {
                         style={styles.itemActionBtn}
                         onPress={() => setSelectedPassQR(p)}
                       >
-                        <Text style={styles.itemActionBtnText}>▦ View QR Pass</Text>
+                        <Text style={styles.itemActionBtnText}>View QR Pass</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -510,7 +503,6 @@ export default function StaffPortalScreen() {
 
             {helps.length === 0 ? (
               <View style={styles.emptyBox}>
-                <Text style={styles.emptyIcon}>🧹</Text>
                 <Text style={styles.emptyTitle}>No Domestic Staff Registered</Text>
                 <Text style={styles.emptySub}>
                   Entering an existing campus mobile number instantly links clearance!
@@ -566,22 +558,19 @@ export default function StaffPortalScreen() {
                       )}
                       <View style={{ flex: 1 }}>
                         <Text style={styles.itemName}>{h.name}</Text>
-                        <Text style={styles.itemPhone}>📞 +91 {h.phone}</Text>
+                        <Text style={styles.itemPhone}>+91 {h.phone}</Text>
                       </View>
                     </View>
 
                     <View style={styles.helpDetailsSubBox}>
-                      <Text style={styles.helpDetailLine}>🏠 {h.quarterNumber || "Faculty Quarter"}</Text>
+                      <Text style={styles.helpDetailLine}>{h.quarterNumber || "Faculty Quarter"}</Text>
                       {h.idProofNumber ? (
                         <Text style={styles.helpIdLine}>
-                          🪪 {h.idProofType || "AADHAAR"}: {h.idProofNumber}
+                          {h.idProofType || "AADHAAR"}: {h.idProofNumber}
                         </Text>
                       ) : null}
-                      {h.idProofDocUrl && (
-                        <Text style={{ fontSize: 10, color: "#34d399" }}>✓ ID Proof Scan Attached</Text>
-                      )}
                       {h.workShift ? (
-                        <Text style={styles.helpShiftLine}>⏰ Shift: {h.workShift}</Text>
+                        <Text style={styles.helpShiftLine}>Shift: {h.workShift}</Text>
                       ) : null}
                     </View>
 
@@ -590,7 +579,7 @@ export default function StaffPortalScreen() {
                         style={styles.masterQRBtn}
                         onPress={() => setSelectedHelpQR(h)}
                       >
-                        <Text style={styles.masterQRBtnText}>▦ Master QR Pass</Text>
+                        <Text style={styles.masterQRBtnText}>Master QR Pass</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -617,7 +606,7 @@ export default function StaffPortalScreen() {
                             { color: isActive ? "#34d399" : "#f87171" },
                           ]}
                         >
-                          {isActive ? "● Active" : "○ Paused"}
+                          {isActive ? "Active" : "Paused"}
                         </Text>
                       </TouchableOpacity>
 
@@ -670,7 +659,7 @@ export default function StaffPortalScreen() {
                 <Text style={styles.noticeDesc}>{n.description}</Text>
                 {n.resolution ? (
                   <View style={styles.resolutionBox}>
-                    <Text style={styles.resolutionTitle}>✓ Resolution Status:</Text>
+                    <Text style={styles.resolutionTitle}>Resolution Advisory:</Text>
                     <Text style={styles.resolutionText}>{n.resolution}</Text>
                   </View>
                 ) : null}
@@ -861,9 +850,8 @@ function AddVehicleModal({
                   ]}
                   onPress={() => setVehicleType(v.id)}
                 >
-                  <Text style={{ fontSize: 12 }}>{v.icon}</Text>
                   <Text style={[modalStyles.tierText, vehicleType === v.id && modalStyles.tierTextActive]}>
-                    {v.label.split(" ")[0]}
+                    {v.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -908,14 +896,14 @@ function AddVehicleModal({
             {rcDocUrl ? (
               <View style={modalStyles.uploadPreviewBox}>
                 <Image source={{ uri: rcDocUrl }} style={modalStyles.uploadThumb} />
-                <Text style={modalStyles.uploadAttachedText}>✓ RC Attached</Text>
+                <Text style={modalStyles.uploadAttachedText}>RC Attached</Text>
                 <TouchableOpacity onPress={() => setRcDocUrl(null)} style={{ marginLeft: "auto" }}>
                   <Text style={{ color: "#f87171", fontSize: 12, fontWeight: "bold" }}>✕</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity style={modalStyles.uploadBtn} onPress={pickRCDocument}>
-                <Text style={modalStyles.uploadBtnText}>📄 Upload RC Scan</Text>
+                <Text style={modalStyles.uploadBtnText}>Upload RC Scan</Text>
               </TouchableOpacity>
             )}
 
@@ -1165,9 +1153,9 @@ function AddHouseHelpModal({
 
           <ScrollView showsVerticalScrollIndicator={false}>
             <View style={modalStyles.autoLinkBanner}>
-              <Text style={modalStyles.autoLinkTitle}>⚡ 10-Digit Mobile Auto-Link</Text>
+              <Text style={modalStyles.autoLinkTitle}>10-Digit Mobile Auto-Link</Text>
               <Text style={modalStyles.autoLinkDesc}>
-                Entering an existing campus mobile links clearance immediately!
+                Entering an existing campus mobile links clearance immediately.
               </Text>
             </View>
 
@@ -1205,9 +1193,8 @@ function AddHouseHelpModal({
                     ]}
                     onPress={() => setServiceType(cat.id)}
                   >
-                    <Text style={{ fontSize: 11 }}>{cat.icon}</Text>
                     <Text style={[modalStyles.tierText, serviceType === cat.id && modalStyles.tierTextActive]}>
-                      {cat.label.split(" ")[0]}
+                      {cat.label}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -1262,14 +1249,14 @@ function AddHouseHelpModal({
                 {idProofDocUrl ? (
                   <View style={modalStyles.uploadPreviewBox}>
                     <Image source={{ uri: idProofDocUrl }} style={modalStyles.uploadThumb} />
-                    <Text style={modalStyles.uploadAttachedText}>✓ Attached</Text>
+                    <Text style={modalStyles.uploadAttachedText}>Attached</Text>
                     <TouchableOpacity onPress={() => setIdProofDocUrl(null)} style={{ marginLeft: "auto" }}>
                       <Text style={{ color: "#f87171", fontSize: 12, fontWeight: "bold" }}>✕</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
                   <TouchableOpacity style={modalStyles.uploadBtn} onPress={pickDocument}>
-                    <Text style={modalStyles.uploadBtnText}>📄 Upload ID</Text>
+                    <Text style={modalStyles.uploadBtnText}>Upload ID</Text>
                   </TouchableOpacity>
                 )}
               </View>
@@ -1280,21 +1267,21 @@ function AddHouseHelpModal({
                 {photoUrl ? (
                   <View style={modalStyles.uploadPreviewBox}>
                     <Image source={{ uri: photoUrl }} style={modalStyles.uploadThumb} />
-                    <Text style={modalStyles.uploadAttachedText}>✓ Attached</Text>
+                    <Text style={modalStyles.uploadAttachedText}>Attached</Text>
                     <TouchableOpacity onPress={() => setPhotoUrl(null)} style={{ marginLeft: "auto" }}>
                       <Text style={{ color: "#f87171", fontSize: 12, fontWeight: "bold" }}>✕</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
                   <TouchableOpacity style={modalStyles.uploadBtn} onPress={pickPhoto}>
-                    <Text style={modalStyles.uploadBtnText}>📷 Upload Selfie</Text>
+                    <Text style={modalStyles.uploadBtnText}>Upload Selfie</Text>
                   </TouchableOpacity>
                 )}
               </View>
             </View>
 
             <TouchableOpacity
-              style={[modalStyles.submitBtn, { backgroundColor: "#8b5cf6" }]}
+              style={[modalStyles.submitBtn, { backgroundColor: "#2563eb" }]}
               onPress={handleSubmit}
               disabled={saving}
             >
@@ -1311,7 +1298,7 @@ function GateScannerModal({ visible, onClose }: { visible: boolean; onClose: () 
   const [status, setStatus] = useState<string | null>(null);
 
   const simulateGate = (g: string) => {
-    setStatus(`✅ Success: Barrier Opened at Gate ${g}`);
+    setStatus(`Barrier Opened at Gate ${g}`);
     setTimeout(() => {
       setStatus(null);
       onClose();
@@ -1339,7 +1326,7 @@ function GateScannerModal({ visible, onClose }: { visible: boolean; onClose: () 
             </View>
           )}
 
-          <Text style={modalStyles.label}>⚡ Quick Gate Simulators</Text>
+          <Text style={modalStyles.label}>Quick Gate Emulators</Text>
           <View style={{ flexDirection: "row", gap: 8 }}>
             {["1", "2", "3", "4"].map((g) => (
               <TouchableOpacity
@@ -1407,12 +1394,12 @@ function WhiteQRModal({
               });
             } else {
               await Share.share({
-                message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Code: ${token}\n🖼️ View QR: ${universalQRImageUrl}`,
+                message: `Thapar University Gate Pass\n${name}\nCode: ${token}\nView QR: ${universalQRImageUrl}`,
               });
             }
           } catch {
             await Share.share({
-              message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Code: ${token}\n🖼️ View QR: ${universalQRImageUrl}`,
+              message: `Thapar University Gate Pass\n${name}\nCode: ${token}\nView QR: ${universalQRImageUrl}`,
             });
           } finally {
             setSharing(false);
@@ -1420,7 +1407,7 @@ function WhiteQRModal({
         });
       } else {
         await Share.share({
-          message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Code: ${token}\n🖼️ View QR: ${universalQRImageUrl}`,
+          message: `Thapar University Gate Pass\n${name}\nCode: ${token}\nView QR: ${universalQRImageUrl}`,
         });
         setSharing(false);
       }
@@ -1431,7 +1418,7 @@ function WhiteQRModal({
 
   // 2. Direct WhatsApp text message with the working universal QR link
   const handleWhatsAppMessage = async () => {
-    const msg = `🏛️ *THAPAR UNIVERSITY GATE CLEARANCE*\n\n📋 *Pass:* ${title}\n👤 *Issued For:* ${name}\n🔑 *Token Code:* ${token}\n\n🖼️ *Instant Scannable QR Pass (Tap to Open):*\n${universalQRImageUrl}\n\n_Show this QR code to the security guard at Gate 1–4 for 1-scan barrier entry._`;
+    const msg = `THAPAR UNIVERSITY GATE CLEARANCE\n\nPass: ${title}\nIssued For: ${name}\nToken Code: ${token}\n\nInstant Scannable QR Pass:\n${universalQRImageUrl}\n\nPresent this QR code to security at Gate 1–4 for 1-scan barrier entry.`;
     const cleanPhone = phone?.replace(/[^0-9]/g, "") || "";
     const nativeWa = cleanPhone.length >= 10
       ? `whatsapp://send?phone=91${cleanPhone.slice(-10)}&text=${encodeURIComponent(msg)}`
@@ -1499,7 +1486,7 @@ function WhiteQRModal({
               {sharing ? (
                 <ActivityIndicator color="#ffffff" size="small" />
               ) : (
-                <Text style={modalStyles.shareImgMainBtnText}>🖼️ Send QR Image to WhatsApp / Save to Photos</Text>
+                <Text style={modalStyles.shareImgMainBtnText}>Send QR Image to WhatsApp / Contacts</Text>
               )}
             </TouchableOpacity>
 
@@ -1508,7 +1495,7 @@ function WhiteQRModal({
               onPress={handleWhatsAppMessage}
               activeOpacity={0.85}
             >
-              <Text style={modalStyles.waTextBtnText}>💬 Send WhatsApp Text &amp; Universal QR Link</Text>
+              <Text style={modalStyles.waTextBtnText}>Send WhatsApp Text &amp; QR Link</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1534,14 +1521,14 @@ const styles = StyleSheet.create({
   crestBox: {
     width: 38,
     height: 38,
-    borderRadius: 12,
-    backgroundColor: "#0f172a",
+    borderRadius: 10,
+    backgroundColor: "#1e293b",
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: "#334155",
     alignItems: "center",
     justifyContent: "center",
   },
-  crestText: { fontSize: 18 },
+  crestText: { fontSize: 13, fontWeight: "900", color: "#f8fafc" },
   mainTitle: { fontSize: 15, fontWeight: "900", color: "#ffffff", letterSpacing: -0.3 },
   facultyPill: {
     backgroundColor: "#1e293b",
@@ -1559,7 +1546,7 @@ const styles = StyleSheet.create({
     borderColor: "#1e293b",
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   signOutText: { color: "#94a3b8", fontSize: 11, fontWeight: "700" },
   tabsScrollBar: { borderTopWidth: 1, borderTopColor: "#1e293b" },
@@ -1570,7 +1557,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: "transparent",
   },
   tabButtonActive: {
@@ -1578,31 +1565,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#334155",
   },
-  tabIcon: { fontSize: 13 },
   tabLabel: { fontSize: 11, fontWeight: "700", color: "#64748b" },
   tabLabelActive: { color: "#ffffff" },
   tabBadge: {
     backgroundColor: "#1e293b",
     paddingHorizontal: 5,
     paddingVertical: 1,
-    borderRadius: 8,
+    borderRadius: 6,
   },
-  tabBadgeActive: { backgroundColor: "#ffffff" },
+  tabBadgeActive: { backgroundColor: "#2563eb" },
   tabBadgeText: { fontSize: 9, fontWeight: "800", color: "#64748b" },
-  tabBadgeTextActive: { color: "#0f172a" },
+  tabBadgeTextActive: { color: "#ffffff" },
   mainContent: { flex: 1, backgroundColor: "#020617" },
   scrollPadding: { padding: 16, paddingBottom: 60 },
   sectionSpace: { gap: 14 },
   cardDark: {
     backgroundColor: "#0f172a",
-    borderRadius: 22,
+    borderRadius: 16,
     padding: 16,
     borderWidth: 1,
     borderColor: "#1e293b",
   },
   cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  cardSuperTitle: { fontSize: 10, fontWeight: "900", color: "#818cf8", letterSpacing: 0.5 },
-  cardBigTitle: { fontSize: 17, fontWeight: "900", color: "#ffffff", marginTop: 2 },
+  cardSuperTitle: { fontSize: 10, fontWeight: "800", color: "#3b82f6", letterSpacing: 0.5 },
+  cardBigTitle: { fontSize: 17, fontWeight: "800", color: "#ffffff", marginTop: 2 },
   cardMetaText: { fontSize: 11, color: "#94a3b8", marginTop: 2 },
   activePermitPill: {
     backgroundColor: "rgba(16, 185, 129, 0.15)",
@@ -1610,9 +1596,9 @@ const styles = StyleSheet.create({
     borderColor: "#10b981",
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 8,
+    borderRadius: 6,
   },
-  activePermitText: { color: "#34d399", fontSize: 9, fontWeight: "900" },
+  activePermitText: { color: "#34d399", fontSize: 9, fontWeight: "800" },
   gatePillsRow: { flexDirection: "row", gap: 6, marginTop: 12, marginBottom: 8 },
   gatePill: {
     flex: 1,
@@ -1620,31 +1606,29 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#334155",
     paddingVertical: 6,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: "center",
   },
-  gatePillActive: { backgroundColor: "#312e81", borderColor: "#6366f1" },
+  gatePillActive: { backgroundColor: "#1e3a8a", borderColor: "#2563eb" },
   gatePillText: { color: "#94a3b8", fontSize: 11, fontWeight: "700" },
   gatePillTextActive: { color: "#ffffff" },
   barrierPulseBtn: {
-    backgroundColor: "#4f46e5",
-    borderRadius: 14,
+    backgroundColor: "#2563eb",
+    borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
     alignItems: "center",
     marginTop: 4,
   },
-  barrierBtnInner: { flexDirection: "row", alignItems: "center", gap: 10 },
-  barrierZap: { fontSize: 20 },
-  barrierPulseText: { color: "#ffffff", fontSize: 13, fontWeight: "900" },
-  barrierPulseSub: { color: "#c7d2fe", fontSize: 9 },
+  barrierPulseText: { color: "#ffffff", fontSize: 13, fontWeight: "800" },
+  barrierPulseSub: { color: "#bfdbfe", fontSize: 9 },
   btnDisabled: { opacity: 0.5 },
   barrierToast: {
     backgroundColor: "rgba(16, 185, 129, 0.15)",
     borderWidth: 1,
     borderColor: "#10b981",
     padding: 8,
-    borderRadius: 10,
+    borderRadius: 8,
     marginTop: 8,
   },
   barrierToastText: { color: "#34d399", fontSize: 11, fontWeight: "700", textAlign: "center" },
@@ -1657,10 +1641,10 @@ const styles = StyleSheet.create({
   },
   blockTitle: { fontSize: 13, fontWeight: "800", color: "#f8fafc" },
   blockSub: { fontSize: 10, color: "#64748b" },
-  accentLink: { color: "#818cf8", fontSize: 11, fontWeight: "700" },
+  accentLink: { color: "#3b82f6", fontSize: 11, fontWeight: "700" },
   lotMeterCard: {
     backgroundColor: "#0f172a",
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 12,
     borderWidth: 1,
     borderColor: "#1e293b",
@@ -1668,7 +1652,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   lotMeterTop: { flexDirection: "row", justifyContent: "space-between", marginBottom: 2 },
-  lotCodeText: { color: "#818cf8", fontSize: 10, fontWeight: "900" },
+  lotCodeText: { color: "#3b82f6", fontSize: 10, fontWeight: "800" },
   lotFreeText: { color: "#34d399", fontSize: 10, fontWeight: "800" },
   lotNameText: { color: "#ffffff", fontSize: 11, fontWeight: "700" },
   lotOccupancyText: { color: "#64748b", fontSize: 9, marginTop: 2, marginBottom: 6 },
@@ -1676,7 +1660,7 @@ const styles = StyleSheet.create({
   lotProgressBar: { height: "100%", borderRadius: 2 },
   carRowCard: {
     backgroundColor: "#0f172a",
-    borderRadius: 16,
+    borderRadius: 14,
     padding: 12,
     borderWidth: 1,
     borderColor: "#1e293b",
@@ -1685,14 +1669,14 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-  carPlateMono: { color: "#ffffff", fontSize: 14, fontWeight: "900", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
+  carPlateMono: { color: "#ffffff", fontSize: 14, fontWeight: "800", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
   carModelText: { color: "#94a3b8", fontSize: 10, marginTop: 1 },
   stickerBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1 },
   stickerBadgeText: { fontSize: 9, fontWeight: "800" },
-  viewBadgeHint: { color: "#818cf8", fontSize: 10, fontWeight: "700", marginTop: 2 },
+  viewBadgeHint: { color: "#3b82f6", fontSize: 10, fontWeight: "700", marginTop: 2 },
   scannerPromptCard: {
     backgroundColor: "#0f172a",
-    borderRadius: 18,
+    borderRadius: 14,
     padding: 14,
     borderWidth: 1,
     borderColor: "#1e293b",
@@ -1707,18 +1691,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  tabSectionBigTitle: { fontSize: 16, fontWeight: "900", color: "#ffffff" },
+  tabSectionBigTitle: { fontSize: 16, fontWeight: "800", color: "#ffffff" },
   tabSectionDesc: { fontSize: 10, color: "#64748b", marginTop: 1 },
   primaryAddBtn: {
     backgroundColor: "#f8fafc",
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 10,
+    borderRadius: 8,
   },
   primaryAddBtnText: { color: "#0f172a", fontSize: 11, fontWeight: "800" },
   itemCard: {
     backgroundColor: "#0f172a",
-    borderRadius: 18,
+    borderRadius: 14,
     padding: 14,
     borderWidth: 1,
     borderColor: "#1e293b",
@@ -1728,8 +1712,8 @@ const styles = StyleSheet.create({
   categoryTagText: { color: "#cbd5e1", fontSize: 9, fontWeight: "800", textTransform: "uppercase" },
   statusTag: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1 },
   statusTagText: { fontSize: 9, fontWeight: "800", textTransform: "uppercase" },
-  purpleTag: { backgroundColor: "rgba(139, 92, 246, 0.15)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
-  purpleTagText: { color: "#c084fc", fontSize: 9, fontWeight: "800", textTransform: "uppercase" },
+  purpleTag: { backgroundColor: "rgba(59, 130, 246, 0.15)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  purpleTagText: { color: "#60a5fa", fontSize: 9, fontWeight: "800", textTransform: "uppercase" },
   itemName: { fontSize: 15, fontWeight: "800", color: "#ffffff" },
   itemPhone: { fontSize: 11, color: "#64748b", marginTop: 2, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
   vehiclePlateTag: {
@@ -1757,39 +1741,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#1e293b",
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#4338ca",
+    borderColor: "#334155",
   },
-  itemActionBtnText: { color: "#a5b4fc", fontSize: 10, fontWeight: "800" },
+  itemActionBtnText: { color: "#93c5fd", fontSize: 10, fontWeight: "700" },
   helpAvatar: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    backgroundColor: "rgba(139, 92, 246, 0.15)",
+    borderRadius: 8,
+    backgroundColor: "rgba(59, 130, 246, 0.15)",
     borderWidth: 1,
-    borderColor: "rgba(139, 92, 246, 0.3)",
+    borderColor: "rgba(59, 130, 246, 0.3)",
     alignItems: "center",
     justifyContent: "center",
   },
   helpAvatarImg: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#8b5cf6",
+    borderColor: "#2563eb",
   },
-  helpAvatarText: { color: "#c084fc", fontSize: 13, fontWeight: "900" },
+  helpAvatarText: { color: "#60a5fa", fontSize: 13, fontWeight: "800" },
   helpDetailsSubBox: { marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: "rgba(30, 41, 59, 0.6)", gap: 2 },
   helpDetailLine: { fontSize: 11, color: "#cbd5e1" },
   helpIdLine: { fontSize: 10, color: "#34d399", fontWeight: "700" },
   helpShiftLine: { fontSize: 10, color: "#94a3b8" },
-  masterQRBtn: { backgroundColor: "#1e1b4b", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: "#4338ca" },
-  masterQRBtnText: { color: "#a5b4fc", fontSize: 10, fontWeight: "800" },
-  toggleActiveBtn: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
+  masterQRBtn: { backgroundColor: "#1e293b", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 6, borderWidth: 1, borderColor: "#334155" },
+  masterQRBtnText: { color: "#93c5fd", fontSize: 10, fontWeight: "700" },
+  toggleActiveBtn: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6, borderWidth: 1 },
   toggleActiveText: { fontSize: 10, fontWeight: "800" },
-  trashBtn: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, backgroundColor: "#1e293b" },
-  noticeCard: { backgroundColor: "#0f172a", borderRadius: 18, padding: 14, borderWidth: 1, borderColor: "#1e293b" },
+  trashBtn: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6, backgroundColor: "#1e293b" },
+  noticeCard: { backgroundColor: "#0f172a", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#1e293b" },
   noticeTitle: { fontSize: 14, fontWeight: "800", color: "#ffffff", flex: 1 },
   severityTag: { backgroundColor: "rgba(245, 158, 11, 0.15)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
   severityTagText: { color: "#fbbf24", fontSize: 9, fontWeight: "800" },
@@ -1799,7 +1783,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     padding: 8,
     backgroundColor: "rgba(16, 185, 129, 0.1)",
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "rgba(16, 185, 129, 0.2)",
   },
@@ -1807,32 +1791,31 @@ const styles = StyleSheet.create({
   resolutionText: { fontSize: 10, color: "#a7f3d0", marginTop: 1 },
   emptyBox: {
     backgroundColor: "#0f172a",
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 24,
     alignItems: "center",
     borderWidth: 1,
     borderColor: "#1e293b",
     borderStyle: "dashed",
   },
-  emptyIcon: { fontSize: 32, marginBottom: 6 },
   emptyTitle: { fontSize: 14, fontWeight: "800", color: "#ffffff" },
   emptySub: { fontSize: 11, color: "#64748b", textAlign: "center", marginTop: 2, marginBottom: 12 },
-  emptyActionBtn: { backgroundColor: "#f8fafc", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
+  emptyActionBtn: { backgroundColor: "#f8fafc", paddingHorizontal: 12, paddingVertical: 8, borderRadius: 8 },
   emptyActionText: { color: "#0f172a", fontSize: 11, fontWeight: "800" },
 });
 
 const modalStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", padding: 20 },
-  card: { backgroundColor: "#0f172a", borderRadius: 22, padding: 18, borderWidth: 1, borderColor: "#1e293b", maxHeight: "90%" },
+  card: { backgroundColor: "#0f172a", borderRadius: 16, padding: 18, borderWidth: 1, borderColor: "#1e293b", maxHeight: "90%" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  title: { fontSize: 16, fontWeight: "900", color: "#ffffff" },
+  title: { fontSize: 16, fontWeight: "800", color: "#ffffff" },
   closeIcon: { fontSize: 16, color: "#94a3b8", padding: 4 },
   label: { fontSize: 11, fontWeight: "700", color: "#cbd5e1", marginTop: 8, marginBottom: 4 },
   input: {
     backgroundColor: "#020617",
     borderWidth: 1,
     borderColor: "#334155",
-    borderRadius: 10,
+    borderRadius: 8,
     paddingHorizontal: 12,
     paddingVertical: 8,
     color: "#ffffff",
@@ -1846,18 +1829,18 @@ const modalStyles = StyleSheet.create({
     borderColor: "#334155",
     paddingVertical: 6,
     paddingHorizontal: 8,
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "center",
     gap: 4,
   },
-  tierBtnActive: { backgroundColor: "#312e81", borderColor: "#6366f1" },
+  tierBtnActive: { backgroundColor: "#1e3a8a", borderColor: "#2563eb" },
   tierText: { color: "#94a3b8", fontSize: 10, fontWeight: "700" },
   tierTextActive: { color: "#ffffff" },
   submitBtn: {
-    backgroundColor: "#4f46e5",
-    borderRadius: 12,
+    backgroundColor: "#2563eb",
+    borderRadius: 8,
     paddingVertical: 12,
     alignItems: "center",
     marginTop: 14,
@@ -1865,24 +1848,24 @@ const modalStyles = StyleSheet.create({
   },
   submitBtnText: { color: "#ffffff", fontSize: 12, fontWeight: "800" },
   autoLinkBanner: {
-    backgroundColor: "rgba(139, 92, 246, 0.1)",
+    backgroundColor: "rgba(59, 130, 246, 0.1)",
     borderWidth: 1,
-    borderColor: "rgba(139, 92, 246, 0.3)",
+    borderColor: "rgba(59, 130, 246, 0.3)",
     padding: 8,
-    borderRadius: 10,
+    borderRadius: 8,
     marginBottom: 8,
   },
-  autoLinkTitle: { fontSize: 10, fontWeight: "800", color: "#c084fc" },
+  autoLinkTitle: { fontSize: 10, fontWeight: "800", color: "#60a5fa" },
   autoLinkDesc: { fontSize: 9, color: "#cbd5e1", marginTop: 1 },
   uploadBtn: {
     backgroundColor: "#020617",
     borderWidth: 1,
     borderColor: "#334155",
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 10,
     alignItems: "center",
   },
-  uploadBtnText: { color: "#818cf8", fontSize: 11, fontWeight: "700" },
+  uploadBtnText: { color: "#60a5fa", fontSize: 11, fontWeight: "700" },
   uploadPreviewBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -1890,19 +1873,19 @@ const modalStyles = StyleSheet.create({
     backgroundColor: "#020617",
     borderWidth: 1,
     borderColor: "#334155",
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 6,
   },
-  uploadThumb: { width: 34, height: 34, borderRadius: 8 },
+  uploadThumb: { width: 34, height: 34, borderRadius: 6 },
   uploadAttachedText: { color: "#34d399", fontSize: 10, fontWeight: "700" },
-  viewfinder: { height: 160, backgroundColor: "#020617", borderRadius: 16, borderWidth: 1, borderColor: "#334155", alignItems: "center", justifyContent: "center", marginBottom: 12 },
-  toastBox: { backgroundColor: "rgba(16, 185, 129, 0.15)", padding: 8, borderRadius: 8, marginBottom: 8 },
+  viewfinder: { height: 160, backgroundColor: "#020617", borderRadius: 12, borderWidth: 1, borderColor: "#334155", alignItems: "center", justifyContent: "center", marginBottom: 12 },
+  toastBox: { backgroundColor: "rgba(16, 185, 129, 0.15)", padding: 8, borderRadius: 6, marginBottom: 8 },
   toastText: { color: "#34d399", fontSize: 11, fontWeight: "700", textAlign: "center" },
-  gateSimBtn: { flex: 1, backgroundColor: "#1e1b4b", paddingVertical: 8, borderRadius: 8, alignItems: "center", borderWidth: 1, borderColor: "#4338ca" },
-  gateSimText: { color: "#a5b4fc", fontSize: 11, fontWeight: "800" },
+  gateSimBtn: { flex: 1, backgroundColor: "#1e293b", paddingVertical: 8, borderRadius: 6, alignItems: "center", borderWidth: 1, borderColor: "#334155" },
+  gateSimText: { color: "#93c5fd", fontSize: 11, fontWeight: "700" },
   whiteCard: {
     backgroundColor: "#ffffff",
-    borderRadius: 24,
+    borderRadius: 20,
     padding: 20,
     alignItems: "center",
     shadowColor: "#000",
@@ -1914,11 +1897,11 @@ const modalStyles = StyleSheet.create({
   whiteCloseBtn: { position: "absolute", top: 14, right: 14, width: 28, height: 28, borderRadius: 14, backgroundColor: "#f1f5f9", alignItems: "center", justifyContent: "center" },
   whiteCloseText: { fontSize: 12, color: "#64748b", fontWeight: "bold" },
   whiteCrestSub: { fontSize: 8, fontWeight: "900", color: "#64748b", letterSpacing: 0.5 },
-  whiteTitle: { fontSize: 16, fontWeight: "900", color: "#0f172a", marginTop: 2, marginBottom: 12 },
+  whiteTitle: { fontSize: 16, fontWeight: "800", color: "#0f172a", marginTop: 2, marginBottom: 12 },
   qrBox: {
     backgroundColor: "#ffffff",
     padding: 16,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: "#e2e8f0",
     alignItems: "center",
@@ -1930,23 +1913,23 @@ const modalStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  qrCodeBigMono: { fontSize: 15, fontWeight: "900", color: "#4338ca", marginTop: 10, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace", letterSpacing: 0.5 },
-  metaContainer: { width: "100%", backgroundColor: "#f8fafc", padding: 10, borderRadius: 12, borderWidth: 1, borderColor: "#e2e8f0", marginBottom: 12 },
+  qrCodeBigMono: { fontSize: 15, fontWeight: "900", color: "#1e3a8a", marginTop: 10, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace", letterSpacing: 0.5 },
+  metaContainer: { width: "100%", backgroundColor: "#f8fafc", padding: 10, borderRadius: 10, borderWidth: 1, borderColor: "#e2e8f0", marginBottom: 12 },
   metaLineRow: { fontSize: 11, color: "#334155", marginBottom: 2 },
   metaLineLabel: { fontWeight: "700", color: "#64748b" },
   metaLineVal: { fontWeight: "800", color: "#0f172a" },
   shareImgMainBtn: {
     backgroundColor: "#059669",
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: "center",
     width: "100%",
   },
-  shareImgMainBtnText: { color: "#ffffff", fontSize: 12, fontWeight: "900" },
+  shareImgMainBtnText: { color: "#ffffff", fontSize: 12, fontWeight: "800" },
   waTextBtn: {
     backgroundColor: "#0f172a",
     paddingVertical: 11,
-    borderRadius: 12,
+    borderRadius: 8,
     alignItems: "center",
     width: "100%",
   },

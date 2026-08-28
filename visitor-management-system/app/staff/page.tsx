@@ -15,7 +15,6 @@ import {
   Plus,
   Copy,
   Check,
-  Share2,
   Phone,
   Trash2,
   Loader2,
@@ -28,9 +27,14 @@ import {
   Calendar,
   X,
   Upload,
-  Image as ImageIcon,
   ExternalLink,
   MessageSquare,
+  Search,
+  CheckCircle2,
+  Building,
+  AlertCircle,
+  Briefcase,
+  Share2,
 } from "lucide-react";
 import StaffParkingSection from "@/components/StaffParkingSection";
 import {
@@ -49,6 +53,23 @@ import {
 
 type StaffTab = "parking" | "guests" | "house_helps" | "notices";
 
+const SERVICE_CATEGORIES = [
+  { id: "MAID", label: "Maid / Domestic Help" },
+  { id: "COOK", label: "Cook / Chef" },
+  { id: "DRIVER", label: "Driver" },
+  { id: "CLEANER", label: "Cleaner" },
+  { id: "GARDENER", label: "Gardener" },
+  { id: "OTHER", label: "Other Domestic Staff" },
+];
+
+const ID_PROOF_TYPES = [
+  { id: "AADHAAR", label: "Aadhaar Card" },
+  { id: "VOTER_ID", label: "Voter ID Card" },
+  { id: "DRIVING_LICENSE", label: "Driving License" },
+  { id: "PASSPORT", label: "Passport" },
+  { id: "OTHER", label: "Govt Photo ID" },
+];
+
 export default function StaffPage() {
   const { data: session, status } = useSession();
 
@@ -57,7 +78,7 @@ export default function StaffPage() {
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3">
         <Loader2 className="animate-spin text-slate-400" size={32} />
         <p className="text-xs text-slate-400 font-medium tracking-wide">
-          Authenticating Staff &amp; Resident Portal...
+          Authenticating Faculty &amp; Resident Console...
         </p>
       </div>
     );
@@ -80,6 +101,11 @@ function StaffConsole({ userName }: { userName: string }) {
   const [selectedPassForQR, setSelectedPassForQR] = useState<VIPDTO | null>(null);
   const [selectedHelpForQR, setSelectedHelpForQR] = useState<HouseHelpDTO | null>(null);
 
+  // Search queries
+  const [guestSearch, setGuestSearch] = useState("");
+  const [guestStatusFilter, setGuestStatusFilter] = useState("ALL");
+  const [helpSearch, setHelpSearch] = useState("");
+
   // Queries (10s auto-refresh)
   const parkingQuery = useQuery({
     queryKey: ["faculty-dashboard"],
@@ -100,230 +126,408 @@ function StaffConsole({ userName }: { userName: string }) {
     queryFn: fetchStaffHouseHelps,
     refetchInterval: 10_000,
   });
-  const helps = helpsQuery.data?.items ?? [];
+  const helps = helpsQuery.data?.helps ?? [];
 
   const noticesQuery = useQuery({
-    queryKey: ["my-notices"],
-    queryFn: () => fetchIncidents(true),
-    refetchInterval: 10_000,
+    queryKey: ["incidents"],
+    queryFn: fetchIncidents,
+    refetchInterval: 30_000,
   });
-  const notices = noticesQuery.data?.items ?? [];
+  const notices = noticesQuery.data?.incidents ?? [];
 
-  // Mutations
-  const toggleHelpMut = useMutation({
-    mutationFn: (a: { id: string; isActive: boolean }) =>
-      updateStaffHouseHelp(a.id, { isActive: a.isActive }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
-    },
-  });
-
-  const extendHelpMut = useMutation({
-    mutationFn: (a: { id: string; validUntil: string }) =>
-      updateStaffHouseHelp(a.id, { validUntil: a.validUntil }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
-    },
+  // Filtered passes
+  const filteredPasses = passes.filter((p) => {
+    const matchesQuery =
+      p.guestName.toLowerCase().includes(guestSearch.toLowerCase()) ||
+      p.token.toLowerCase().includes(guestSearch.toLowerCase()) ||
+      (p.vehicleNumber && p.vehicleNumber.toLowerCase().includes(guestSearch.toLowerCase()));
+    if (!matchesQuery) return false;
+    if (guestStatusFilter === "ALL") return true;
+    if (guestStatusFilter === "CHECKED_IN") return p.status === "CHECKED_IN";
+    if (guestStatusFilter === "APPROVED") return p.status === "APPROVED" || p.status === "VALID";
+    if (guestStatusFilter === "EXPIRED") return p.status === "EXPIRED" || p.status === "EXITED";
+    return true;
   });
 
-  const deleteHelpMut = useMutation({
-    mutationFn: (id: string) => deleteStaffHouseHelp(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
-    },
-  });
+  // Filtered helpers
+  const filteredHelps = helps.filter(
+    (h) =>
+      h.helper.name.toLowerCase().includes(helpSearch.toLowerCase()) ||
+      h.helper.phone.includes(helpSearch) ||
+      h.helper.serviceType.toLowerCase().includes(helpSearch.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans antialiased flex flex-col pb-20">
-      {/* Sticky Blurred Header */}
-      <header className="sticky top-0 z-30 bg-slate-950/90 backdrop-blur-md border-b border-slate-800 shadow-md">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link
-              href="/"
-              className="w-9 h-9 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 flex items-center justify-center text-slate-300 transition-colors"
-              title="Back to Campus Portal"
-            >
-              <ArrowLeft size={17} />
-            </Link>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-sm sm:text-base text-white tracking-tight">
-                  Thapar Staff &amp; Resident Hub
-                </span>
-                <span className="px-2 py-0.5 text-[10px] font-semibold bg-slate-900 text-slate-300 border border-slate-800 rounded-md">
-                  Faculty Console
-                </span>
+    <div className="min-h-screen bg-slate-950 text-slate-100 antialiased">
+      {/* Top Professional Header */}
+      <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Link
+                href="/"
+                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white transition"
+                title="Back to Campus Portal"
+              >
+                <ArrowLeft size={16} />
+              </Link>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base font-bold text-white tracking-tight">Thapar Staff Hub</h1>
+                  <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300 border border-slate-700 font-mono">
+                    Faculty Console
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 hidden sm:block">
+                  Campus Parking, Visitor Passes &amp; Domestic Staff Clearance
+                </p>
               </div>
-              <p className="text-xs text-slate-400 truncate max-w-[200px] sm:max-w-none">
-                {userName}
-              </p>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => signOut({ callbackUrl: "/staff" })}
-              className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors"
-            >
-              <LogOut size={14} />
-              <span className="hidden sm:inline">Sign Out</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <div className="hidden md:flex items-center gap-2 text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
+                <User size={13} className="text-slate-500" />
+                <span className="font-semibold text-white">{userName}</span>
+              </div>
+
+              <button
+                onClick={() => signOut({ callbackUrl: "/staff" })}
+                className="flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white transition"
+              >
+                <LogOut size={13} />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* 4-Tab Navigation Bar with Live Badges */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 border-t border-slate-800/80 flex space-x-1.5 py-2 overflow-x-auto no-scrollbar">
-          {[
-            { id: "parking", label: "Parking & Access", icon: Car, badge: carsCount },
-            { id: "guests", label: "Guest Passes", icon: QrCode, badge: passes.length },
-            { id: "house_helps", label: "House Helps & Maids", icon: UserCheck, badge: helps.length },
-            { id: "notices", label: "Security Notices", icon: AlertOctagon, badge: notices.length },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            const active = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as StaffTab)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap active:scale-95 ${
-                  active
-                    ? "bg-slate-800 text-white border border-slate-700 shadow-sm"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/60"
-                }`}
-              >
-                <Icon size={15} />
-                <span>{tab.label}</span>
-                {tab.badge !== undefined && tab.badge > 0 && (
-                  <span
-                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-full ${
-                      active ? "bg-white text-slate-900" : "bg-slate-800 text-slate-400"
+        {/* 4-Tab Navigation Ribbon */}
+        <div className="border-t border-slate-800/80 bg-slate-950/60">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <nav className="flex space-x-2 overflow-x-auto py-2 no-scrollbar">
+              {[
+                { id: "parking", label: "Parking & Access", icon: Car, count: carsCount },
+                { id: "guests", label: "Visitor Passes", icon: QrCode, count: passes.length },
+                { id: "house_helps", label: "Domestic Staff & Maids", icon: UserCheck, count: helps.length },
+                { id: "notices", label: "Security Notices", icon: AlertOctagon, count: notices.length },
+              ].map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as StaffTab)}
+                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
+                      active
+                        ? "bg-slate-800 text-white shadow-sm border border-slate-700"
+                        : "text-slate-400 hover:bg-slate-900 hover:text-slate-200"
                     }`}
                   >
-                    {tab.badge}
-                  </span>
-                )}
-              </button>
-            );
-          })}
+                    <Icon size={14} className={active ? "text-blue-400" : "text-slate-500"} />
+                    <span>{tab.label}</span>
+                    {tab.count > 0 && (
+                      <span
+                        className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold font-mono ${
+                          active ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-6">
-        {/* TAB 1: PARKING & GATE ACCESS */}
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* TAB 1: PARKING & ACCESS */}
         {activeTab === "parking" && <StaffParkingSection userName={userName} />}
 
-        {/* TAB 2: GUEST PASSES */}
+        {/* TAB 2: VISITOR & GUEST PASSES */}
         {activeTab === "guests" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-xl font-bold text-white tracking-tight">Visitor &amp; Guest Passes</h1>
+                <h2 className="text-lg font-bold text-white tracking-tight">Visitor &amp; Guest Passes</h2>
                 <p className="text-xs text-slate-400">
-                  Pre-authorized digital gate passes for visitors, official guests, and meetings.
+                  Pre-cleared digital gate passes for seamless 1-scan QR entry at Gates 1–4
                 </p>
               </div>
+
               <button
                 onClick={() => setShowCreatePassModal(true)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95"
               >
-                <Plus size={15} />
-                <span>+ Issue Guest Pass</span>
+                <Plus size={14} />
+                <span>Issue Guest Pass</span>
               </button>
             </div>
 
-            {passesQuery.isLoading ? (
-              <div className="py-20 text-center text-slate-400 flex flex-col items-center gap-3">
-                <Loader2 className="animate-spin text-slate-500" size={28} />
-                <p className="text-xs font-medium">Loading guest passes...</p>
+            {/* Filter & Search Bar */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1">
+                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  type="text"
+                  placeholder="Search guest name, phone, or token code..."
+                  value={guestSearch}
+                  onChange={(e) => setGuestSearch(e.target.value)}
+                  className="w-full rounded-xl border border-slate-800 bg-slate-900 pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                />
               </div>
-            ) : passes.length === 0 ? (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-3">
-                  🎟️
-                </div>
-                <h3 className="text-base font-bold text-white">No Guest Passes Created</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
-                  Issue digital gate passes with auto-approval. Visitors scan their pass QR code at Gates 1–4.
+
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                {[
+                  { id: "ALL", label: "All Passes" },
+                  { id: "CHECKED_IN", label: "On Campus" },
+                  { id: "APPROVED", label: "Authorized" },
+                  { id: "EXPIRED", label: "Expired" },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setGuestStatusFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                      guestStatusFilter === f.id
+                        ? "bg-slate-800 text-white border border-slate-700"
+                        : "bg-slate-900/60 text-slate-400 hover:text-slate-200 border border-slate-800/80"
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Passes Matrix */}
+            {filteredPasses.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 p-10 text-center">
+                <QrCode className="mx-auto h-8 w-8 text-slate-600" />
+                <h3 className="mt-2 text-sm font-bold text-white">No Guest Passes Found</h3>
+                <p className="mt-1 text-xs text-slate-400 max-w-sm mx-auto">
+                  Create pre-authorized digital passes for family, academic visitors, or vendors.
                 </p>
                 <button
                   onClick={() => setShowCreatePassModal(true)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold transition-all shadow-sm"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 px-4 py-2 text-xs font-bold transition shadow-sm"
                 >
-                  + Issue First Pass
+                  <Plus size={14} /> Issue First Pass
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {passes.map((p) => (
-                  <PassCard
-                    key={p.id}
-                    pass={p}
-                    onViewQR={() => setSelectedPassForQR(p)}
-                  />
-                ))}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredPasses.map((p) => {
+                  const isCheckedIn = p.status === "CHECKED_IN";
+                  const isApproved = p.status === "APPROVED" || p.status === "VALID";
+
+                  return (
+                    <div
+                      key={p.id || p.token}
+                      className="rounded-2xl border border-slate-800/90 bg-slate-900/80 p-4 shadow-sm transition hover:border-slate-700 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300 uppercase">
+                            {p.purpose || "Official Guest"}
+                          </span>
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase font-mono border ${
+                              isCheckedIn
+                                ? "bg-emerald-950/60 text-emerald-400 border-emerald-800/60"
+                                : isApproved
+                                ? "bg-blue-950/60 text-blue-400 border-blue-800/60"
+                                : "bg-slate-800 text-slate-400 border-slate-700"
+                            }`}
+                          >
+                            {isCheckedIn ? "● On Campus" : p.status}
+                          </span>
+                        </div>
+
+                        <h4 className="mt-2.5 text-base font-bold text-white tracking-tight">{p.guestName}</h4>
+
+                        {p.guestPhone && (
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-400 font-mono">
+                            <Phone size={12} className="text-slate-500" />
+                            <span>+91 {p.guestPhone}</span>
+                          </div>
+                        )}
+
+                        {p.vehicleNumber && (
+                          <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-2.5 py-1 text-xs font-mono font-bold text-slate-300 border border-slate-800">
+                            <Car size={13} className="text-slate-400" />
+                            <span>{p.vehicleNumber}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="mt-4 border-t border-slate-800/80 pt-3 flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs text-slate-500 font-semibold">{p.token}</span>
+
+                        <button
+                          onClick={() => setSelectedPassForQR(p)}
+                          className="flex items-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200 border border-slate-700 transition"
+                        >
+                          <QrCode size={13} className="text-slate-400" />
+                          <span>View QR Pass</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
-        {/* TAB 3: HOUSE HELPS & MAIDS */}
+        {/* TAB 3: DOMESTIC STAFF & MAIDS */}
         {activeTab === "house_helps" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-xl font-bold text-white tracking-tight">Domestic Staff &amp; Maids</h1>
+                <h2 className="text-lg font-bold text-white tracking-tight">Domestic Staff &amp; Maids</h2>
                 <p className="text-xs text-slate-400">
-                  Permanent QR access passes for maids, cooks, drivers, and household assistants.
+                  Permanent QR gate passes for maids, cooks, drivers, cleaners, and caregivers
                 </p>
               </div>
+
               <button
                 onClick={() => setShowAddHelpModal(true)}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm active:scale-95"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95"
               >
-                <Plus size={15} />
-                <span>+ Register Helper</span>
+                <Plus size={14} />
+                <span>Register Helper</span>
               </button>
             </div>
 
-            {helpsQuery.isLoading ? (
-              <div className="py-20 text-center text-slate-400 flex flex-col items-center gap-3">
-                <Loader2 className="animate-spin text-slate-500" size={28} />
-                <p className="text-xs font-medium">Loading domestic staff...</p>
+            {/* 10-Digit Mobile Auto-Linking Card */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-300 flex items-start gap-3">
+              <ShieldCheck size={18} className="text-blue-400 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold text-white">10-Digit Mobile Auto-Linking: </span>
+                If your helper already works for another faculty residence, entering their 10-digit mobile number instantly links their existing verified campus clearance without redundant background re-verification.
               </div>
-            ) : helps.length === 0 ? (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-3">
-                  🧹
-                </div>
-                <h3 className="text-base font-bold text-white">No Domestic Staff Registered</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1 mb-4">
-                  Add maids, cooks, or drivers. Entering an existing campus mobile number instantly links their clearance.
+            </div>
+
+            {/* Helpers List */}
+            {filteredHelps.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 p-10 text-center">
+                <UserCheck className="mx-auto h-8 w-8 text-slate-600" />
+                <h3 className="mt-2 text-sm font-bold text-white">No Domestic Staff Registered</h3>
+                <p className="mt-1 text-xs text-slate-400 max-w-sm mx-auto">
+                  Add domestic staff to grant them permanent QR gate barrier entry into your faculty quarter.
                 </p>
                 <button
                   onClick={() => setShowAddHelpModal(true)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold transition-all shadow-sm"
+                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 px-4 py-2 text-xs font-bold transition shadow-sm"
                 >
-                  + Register First Helper
+                  <Plus size={14} /> Register Helper
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {helps.map((h) => (
-                  <HouseHelpCard
-                    key={h.id}
-                    help={h}
-                    onViewQR={() => setSelectedHelpForQR(h)}
-                    onToggleActive={(isActive) => toggleHelpMut.mutate({ id: h.id, isActive })}
-                    onExtendValidity={(validUntil) => extendHelpMut.mutate({ id: h.id, validUntil })}
-                    onUnlink={() => {
-                      if (confirm(`Remove domestic staff clearance for ${h.name} from your quarter?`)) {
-                        deleteHelpMut.mutate(h.id);
-                      }
-                    }}
-                  />
-                ))}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {filteredHelps.map((h) => {
+                  const isActive = h.isActive !== false;
+
+                  return (
+                    <div
+                      key={h.linkId}
+                      className="rounded-2xl border border-slate-800/90 bg-slate-900/80 p-4 shadow-sm transition hover:border-slate-700 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300 uppercase">
+                            {h.helper.serviceType}
+                          </span>
+                          <span
+                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase font-mono border ${
+                              isActive
+                                ? "bg-emerald-950/60 text-emerald-400 border-emerald-800/60"
+                                : "bg-rose-950/60 text-rose-400 border-rose-800/60"
+                            }`}
+                          >
+                            {isActive ? "Active" : "Paused"}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 flex items-center gap-3">
+                          {h.helper.photoUrl ? (
+                            <img
+                              src={h.helper.photoUrl}
+                              alt={h.helper.name}
+                              className="h-11 w-11 rounded-full object-cover border border-slate-700"
+                            />
+                          ) : (
+                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-bold text-sm">
+                              {h.helper.name.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+
+                          <div>
+                            <h4 className="text-base font-bold text-white tracking-tight">{h.helper.name}</h4>
+                            <div className="text-xs text-slate-400 font-mono">+91 {h.helper.phone}</div>
+                          </div>
+                        </div>
+
+                        <div className="mt-3.5 space-y-1 rounded-xl bg-slate-950 p-2.5 text-xs text-slate-400 border border-slate-800/80">
+                          <div className="flex justify-between">
+                            <span className="text-slate-500">Quarter:</span>
+                            <span className="font-semibold text-slate-200">{h.quarterNumber}</span>
+                          </div>
+                          {h.workShift && (
+                            <div className="flex justify-between">
+                              <span className="text-slate-500">Shift:</span>
+                              <span className="text-slate-300">{h.workShift}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 border-t border-slate-800/80 pt-3 flex items-center justify-between gap-2">
+                        <button
+                          onClick={() => setSelectedHelpForQR(h)}
+                          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200 border border-slate-700 transition"
+                        >
+                          <QrCode size={13} className="text-slate-400" />
+                          <span>Master Pass</span>
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            try {
+                              await updateStaffHouseHelp(h.linkId, { isActive: !isActive });
+                              queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
+                            } catch (e: any) {
+                              alert(e.message);
+                            }
+                          }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                            isActive
+                              ? "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
+                              : "bg-emerald-950/60 text-emerald-300 border-emerald-800/60"
+                          }`}
+                        >
+                          {isActive ? "Pause" : "Activate"}
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            if (confirm(`Unlink helper ${h.helper.name} from your quarter?`)) {
+                              await deleteStaffHouseHelp(h.linkId);
+                              queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
+                            }
+                          }}
+                          className="p-1.5 rounded-lg bg-slate-950 hover:bg-rose-950/60 text-slate-500 hover:text-rose-400 border border-slate-800 transition"
+                          title="Unlink Staff"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
@@ -333,82 +537,53 @@ function StaffConsole({ userName }: { userName: string }) {
         {activeTab === "notices" && (
           <div className="space-y-6">
             <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">Campus Security &amp; Residence Notices</h1>
+              <h2 className="text-lg font-bold text-white tracking-tight">Campus Security Notices</h2>
               <p className="text-xs text-slate-400">
-                Official security warnings, incident reports, and residence log updates.
+                Official security updates, safety advisories, and residence notifications
               </p>
             </div>
 
             {notices.length === 0 ? (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-12 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-slate-800 text-emerald-400 flex items-center justify-center text-2xl mx-auto mb-3">
-                  🛡️
-                </div>
-                <h3 className="text-base font-bold text-white">Clean Security Record</h3>
-                <p className="text-xs text-slate-400 max-w-sm mx-auto mt-1">
-                  No security incidents or warnings are currently active against your quarter.
-                </p>
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center text-xs text-slate-400">
+                <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500/80 mb-2" />
+                No active security alerts or pending advisories for faculty residence blocks.
               </div>
             ) : (
               <div className="space-y-3">
                 {notices.map((n) => {
-                  const isCritical = n.severity === "CRITICAL";
-                  const isHigh = n.severity === "HIGH";
+                  const isHigh = n.severity === "HIGH" || n.severity === "CRITICAL";
 
                   return (
                     <div
                       key={n.id}
-                      className={`bg-slate-900 border rounded-2xl p-5 shadow-sm flex items-start gap-4 ${
-                        isCritical
-                          ? "border-rose-500/40 bg-rose-500/5"
-                          : isHigh
-                          ? "border-amber-500/40 bg-amber-500/5"
-                          : "border-slate-800"
-                      }`}
+                      className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm space-y-2"
                     >
-                      <div
-                        className={`p-2.5 rounded-xl text-lg shrink-0 border ${
-                          isCritical
-                            ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
-                            : isHigh
-                            ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
-                            : "bg-blue-500/10 border-blue-500/30 text-blue-400"
-                        }`}
-                      >
-                        ⚠️
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="text-sm font-bold text-white">{n.title}</h4>
+                        <span
+                          className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase font-mono border ${
+                            isHigh
+                              ? "bg-rose-950/60 text-rose-400 border-rose-800/60"
+                              : "bg-slate-800 text-slate-300 border-slate-700"
+                          }`}
+                        >
+                          {n.severity} Priority
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-white text-sm">{n.title}</h3>
-                            <span
-                              className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${
-                                isCritical
-                                  ? "bg-rose-500/20 text-rose-300 border-rose-500/30"
-                                  : isHigh
-                                  ? "bg-amber-500/20 text-amber-300 border-amber-500/30"
-                                  : "bg-blue-500/20 text-blue-300 border-blue-500/30"
-                              }`}
-                            >
-                              {n.severity}
-                            </span>
-                          </div>
-                          <span className="text-xs text-slate-500 font-mono">
-                            {new Date(n.createdAt).toLocaleDateString()}
-                          </span>
+
+                      <div className="text-xs text-slate-400 flex items-center gap-1.5 font-mono">
+                        <Clock size={12} className="text-slate-500" />
+                        <span>{new Date(n.createdAt).toLocaleString()}</span>
+                      </div>
+
+                      <p className="text-xs text-slate-300 leading-relaxed">{n.description}</p>
+
+                      {n.resolution && (
+                        <div className="mt-2 rounded-xl bg-slate-950 border border-slate-800/80 p-3 text-xs text-emerald-400">
+                          <span className="font-bold">Resolution Advisory: </span>
+                          <span className="text-slate-300">{n.resolution}</span>
                         </div>
-                        <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
-                          {n.description}
-                        </p>
-                        {n.resolution && (
-                          <div className="mt-3 p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
-                            <strong className="block text-emerald-300 font-semibold mb-0.5">
-                              ✓ Resolution:
-                            </strong>
-                            {n.resolution}
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
                   );
                 })}
@@ -418,42 +593,62 @@ function StaffConsole({ userName }: { userName: string }) {
         )}
       </main>
 
-      {/* CREATE VIP PASS MODAL */}
+      {/* 1. Create Guest Pass Modal */}
       {showCreatePassModal && (
-        <CreatePassModal
+        <CreateGuestPassModal
           onClose={() => setShowCreatePassModal(false)}
-          onCreated={(pass) => {
-            setShowCreatePassModal(false);
-            setSelectedPassForQR(pass);
+          onCreated={(newPass) => {
             queryClient.invalidateQueries({ queryKey: ["my-vip-passes"] });
+            setShowCreatePassModal(false);
+            setSelectedPassForQR(newPass);
           }}
         />
       )}
 
-      {/* ADD HOUSE HELP MODAL */}
+      {/* 2. Add Domestic Staff Modal */}
       {showAddHelpModal && (
-        <AddHouseHelpModal
+        <AddDomesticStaffModal
           onClose={() => setShowAddHelpModal(false)}
-          onCreated={(help) => {
-            setShowAddHelpModal(false);
-            setSelectedHelpForQR(help);
+          onCreated={(newHelp) => {
             queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
+            setShowAddHelpModal(false);
+            setSelectedHelpForQR(newHelp);
           }}
         />
       )}
 
-      {/* VIP QR MODAL */}
+      {/* 3. Universal Vector QR Modal for Guest Passes */}
       {selectedPassForQR && (
-        <QRModal
-          pass={selectedPassForQR}
+        <UniversalQRModal
+          title="Official Visitor Gate Pass"
+          sub="THAPAR GATE CLEARANCE PASS"
+          name={selectedPassForQR.guestName}
+          token={selectedPassForQR.token}
+          phone={selectedPassForQR.guestPhone}
+          meta={[
+            { label: "Guest Name", value: selectedPassForQR.guestName },
+            { label: "Purpose", value: selectedPassForQR.purpose || "Campus Visit" },
+            { label: "Vehicle", value: selectedPassForQR.vehicleNumber || "Pedestrian Entry" },
+            { label: "Status", value: selectedPassForQR.status },
+          ]}
           onClose={() => setSelectedPassForQR(null)}
         />
       )}
 
-      {/* HOUSE HELP MASTER QR MODAL */}
+      {/* 4. Universal Vector QR Modal for Domestic Staff */}
       {selectedHelpForQR && (
-        <HouseHelpQRModal
-          help={selectedHelpForQR}
+        <UniversalQRModal
+          title="Domestic Staff Master Pass"
+          sub="PERMANENT DOMESTIC STAFF CLEARANCE"
+          name={selectedHelpForQR.helper.name}
+          token={selectedHelpForQR.helper.token}
+          phone={selectedHelpForQR.helper.phone}
+          meta={[
+            { label: "Staff Name", value: selectedHelpForQR.helper.name },
+            { label: "Service", value: selectedHelpForQR.helper.serviceType },
+            { label: "Quarter", value: selectedHelpForQR.quarterNumber },
+            { label: "Clearance", value: selectedHelpForQR.isActive ? "ACTIVE & VERIFIED" : "PAUSED" },
+          ]}
           onClose={() => setSelectedHelpForQR(null)}
         />
       )}
@@ -462,559 +657,10 @@ function StaffConsole({ userName }: { userName: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1. PassCard Component
+// Sub-Modals
 // ─────────────────────────────────────────────────────────────────────────────
-function PassCard({ pass, onViewQR }: { pass: VIPDTO; onViewQR: () => void }) {
-  const isCheckedIn = pass.status === "CHECKED_IN";
-  const isApproved = pass.status === "APPROVED";
-  const isExited = pass.status === "EXITED";
-  const isPending = pass.status === "PENDING";
-  const isRejected = pass.status === "REJECTED";
 
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-slate-700 transition-all">
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300 border border-slate-700">
-            {pass.purpose || "Official Guest"}
-          </span>
-          <span
-            className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
-              isCheckedIn
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                : isApproved
-                ? "bg-blue-500/10 text-blue-400 border-blue-500/20"
-                : isExited
-                ? "bg-slate-800 text-slate-400 border-slate-700"
-                : isRejected
-                ? "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                : "bg-amber-500/10 text-amber-400 border-amber-500/20"
-            }`}
-          >
-            {isCheckedIn ? "● On Campus" : pass.status}
-          </span>
-        </div>
-
-        <h3 className="text-base font-bold text-white tracking-tight">{pass.guestName}</h3>
-        {pass.guestPhone && (
-          <p className="text-xs text-slate-400 mt-0.5 font-mono">📞 +91 {pass.guestPhone}</p>
-        )}
-        {pass.vehicleNumber && (
-          <div className="mt-2.5 inline-block px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono font-bold text-slate-200 uppercase">
-            🚗 {pass.vehicleNumber}
-          </div>
-        )}
-      </div>
-
-      <div className="mt-5 pt-3 border-t border-slate-800/80 flex items-center justify-between">
-        <span className="text-[11px] text-slate-500 font-mono">
-          Code: {pass.token}
-        </span>
-        <button
-          onClick={onViewQR}
-          className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700 active:scale-95"
-        >
-          <QrCode size={14} />
-          <span>View QR Pass</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 2. HouseHelpCard Component
-// ─────────────────────────────────────────────────────────────────────────────
-function HouseHelpCard({
-  help,
-  onViewQR,
-  onToggleActive,
-  onExtendValidity,
-  onUnlink,
-}: {
-  help: HouseHelpDTO;
-  onViewQR: () => void;
-  onToggleActive: (isActive: boolean) => void;
-  onExtendValidity: (validUntil: string) => void;
-  onUnlink: () => void;
-}) {
-  const [isEditingDate, setIsEditingDate] = useState(false);
-  const [validDate, setValidDate] = useState(
-    help.validUntil ? help.validUntil.split("T")[0] : ""
-  );
-
-  const isApproved = help.status === "APPROVED";
-  const isPending = help.status === "PENDING_APPROVAL";
-
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:border-slate-700 transition-all">
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20">
-            {help.serviceType}
-          </span>
-          <span
-            className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide border ${
-              isApproved && help.isActive !== false
-                ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                : isPending
-                ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
-                : "bg-rose-500/10 text-rose-400 border-rose-500/20"
-            }`}
-          >
-            {isPending ? "Awaiting Head" : help.isActive === false ? "Paused" : "Active"}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-purple-950/60 border border-purple-500/30 text-purple-300 font-bold flex items-center justify-center text-sm shrink-0">
-            {help.name.slice(0, 2).toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <h3 className="text-base font-bold text-white truncate">{help.name}</h3>
-            <p className="text-xs text-slate-400 font-mono">📞 +91 {help.phone}</p>
-          </div>
-        </div>
-
-        {/* Details & Proofs */}
-        <div className="mt-3.5 pt-2.5 border-t border-slate-800/60 space-y-1.5 text-xs text-slate-400">
-          <div className="flex items-center gap-1.5">
-            <Home size={13} className="text-slate-500 shrink-0" />
-            <span className="truncate">{help.quarterNumber || "Faculty Residence"}</span>
-          </div>
-
-          {help.idProofNumber && (
-            <div className="flex items-center gap-1.5">
-              <ShieldCheck size={13} className="text-emerald-400 shrink-0" />
-              <span className="truncate">
-                <strong className="text-slate-300">{help.idProofType || "ID"}:</strong>{" "}
-                {help.idProofNumber}
-              </span>
-            </div>
-          )}
-
-          {help.workShift && (
-            <div className="flex items-center gap-1.5">
-              <Clock size={13} className="text-slate-500 shrink-0" />
-              <span>Shift: {help.workShift}</span>
-            </div>
-          )}
-
-          {/* Validity Row */}
-          <div className="flex items-center justify-between pt-1">
-            <span className="text-[11px] text-slate-500">
-              Valid Till:{" "}
-              {help.validUntil
-                ? new Date(help.validUntil).toLocaleDateString()
-                : "Permanent"}
-            </span>
-            <button
-              onClick={() => setIsEditingDate(!isEditingDate)}
-              className="text-[11px] font-semibold text-blue-400 hover:text-blue-300"
-            >
-              {isEditingDate ? "Done" : "Extend"}
-            </button>
-          </div>
-
-          {isEditingDate && (
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="date"
-                value={validDate}
-                onChange={(e) => setValidDate(e.target.value)}
-                className="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1 text-xs text-white"
-              />
-              <button
-                onClick={() => {
-                  if (validDate) {
-                    onExtendValidity(new Date(validDate).toISOString());
-                    setIsEditingDate(false);
-                  }
-                }}
-                className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold"
-              >
-                Save
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-        {isApproved ? (
-          <button
-            onClick={onViewQR}
-            className="flex-1 py-1.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 border border-slate-700 transition-colors active:scale-95"
-          >
-            <QrCode size={14} />
-            <span>Master QR Pass</span>
-          </button>
-        ) : (
-          <div className="flex-1 py-1.5 px-2 text-center text-[11px] font-semibold text-amber-400/80 bg-amber-500/5 rounded-xl border border-amber-500/10">
-            QR Locked • Awaiting Head
-          </div>
-        )}
-
-        <button
-          onClick={() => onToggleActive(!help.isActive)}
-          className={`text-xs font-bold px-2.5 py-1.5 rounded-xl border transition-all active:scale-95 ${
-            help.isActive !== false
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
-              : "bg-rose-500/10 text-rose-400 border-rose-500/20 hover:bg-rose-500/20"
-          }`}
-          title="Toggle Staff Active/Paused"
-        >
-          {help.isActive !== false ? "● Active" : "○ Paused"}
-        </button>
-
-        <button
-          onClick={onUnlink}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700 transition-colors active:scale-95"
-          title="Unlink from Quarter"
-        >
-          <Trash2 size={13} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 3. Shared PassShareBox Toolkit Component
-// ─────────────────────────────────────────────────────────────────────────────
-function PassShareBox({
-  token,
-  title,
-  guestName,
-  purpose,
-  phone,
-  qrDataUrl,
-}: {
-  token: string;
-  title: string;
-  guestName: string;
-  purpose?: string;
-  phone?: string;
-  qrDataUrl: string | null;
-}) {
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedImage, setCopiedImage] = useState(false);
-
-  const getShareUrl = () => {
-    if (typeof window === "undefined") return "";
-    return `${window.location.origin}/pass/${token}`;
-  };
-
-  const getShareMessage = () => {
-    const url = getShareUrl();
-    return `🏛️ Thapar University Campus Pass\n${title}: ${guestName}\nToken: ${token}\nPurpose: ${purpose || "Campus Entry"}\nDigital Pass: ${url}`;
-  };
-
-  // 1. Share QR Image (native sheet)
-  const handleShareImage = async () => {
-    if (!qrDataUrl) return;
-    try {
-      const res = await fetch(qrDataUrl);
-      const blob = await res.blob();
-      const file = new File([blob], `Thapar-Pass-${token}.png`, { type: "image/png" });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: "Thapar Gate Pass",
-          text: getShareMessage(),
-        });
-      } else if (navigator.share) {
-        await navigator.share({
-          title: "Thapar Gate Pass",
-          text: getShareMessage(),
-          url: getShareUrl(),
-        });
-      } else {
-        handleCopyLink();
-      }
-    } catch {
-      handleCopyLink();
-    }
-  };
-
-  // 2. WhatsApp Text
-  const handleWhatsApp = () => {
-    const msg = getShareMessage();
-    const cleanPhone = phone?.replace(/[^0-9]/g, "") || "";
-    const waUrl = cleanPhone.length >= 10
-      ? `https://wa.me/91${cleanPhone.slice(-10)}?text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, "_blank");
-  };
-
-  // 3. Copy PNG Image to Clipboard
-  const handleCopyImage = async () => {
-    if (!qrDataUrl) return;
-    try {
-      const res = await fetch(qrDataUrl);
-      const blob = await res.blob();
-      if ((window as any).ClipboardItem) {
-        await navigator.clipboard.write([
-          new (window as any).ClipboardItem({ "image/png": blob }),
-        ]);
-        setCopiedImage(true);
-        setTimeout(() => setCopiedImage(false), 3000);
-      } else {
-        handleCopyLink();
-      }
-    } catch {
-      handleCopyLink();
-    }
-  };
-
-  // 4. Copy Link
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(getShareUrl());
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 3000);
-  };
-
-  // 5. Download PNG
-  const handleDownload = () => {
-    if (!qrDataUrl) return;
-    const a = document.createElement("a");
-    a.href = qrDataUrl;
-    a.download = `Thapar-Gate-Pass-${token}.png`;
-    a.click();
-  };
-
-  return (
-    <div className="space-y-2.5 mt-4">
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={handleWhatsApp}
-          className="py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95"
-        >
-          <MessageSquare size={14} />
-          <span>WhatsApp</span>
-        </button>
-
-        <button
-          onClick={handleShareImage}
-          className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95"
-        >
-          <Share2 size={14} />
-          <span>Share Pass</span>
-        </button>
-      </div>
-
-      <div className="grid grid-cols-3 gap-1.5">
-        <button
-          onClick={handleCopyLink}
-          className="py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
-        >
-          {copiedLink ? <Check size={13} className="text-emerald-600" /> : <Copy size={13} />}
-          <span>{copiedLink ? "Copied" : "Copy Link"}</span>
-        </button>
-
-        <button
-          onClick={handleCopyImage}
-          className="py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
-        >
-          {copiedImage ? <Check size={13} className="text-emerald-600" /> : <ImageIcon size={13} />}
-          <span>{copiedImage ? "Copied" : "Copy PNG"}</span>
-        </button>
-
-        <button
-          onClick={handleDownload}
-          className="py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold flex items-center justify-center gap-1 transition-all"
-        >
-          <Download size={13} />
-          <span>Save QR</span>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 4. White QRModal (Guest Passes)
-// ─────────────────────────────────────────────────────────────────────────────
-function QRModal({ pass, onClose }: { pass: VIPDTO; onClose: () => void }) {
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    QRCode.toDataURL(pass.token, {
-      width: 380,
-      margin: 2,
-      color: { dark: "#0f172a", light: "#ffffff" },
-    })
-      .then(setQrDataUrl)
-      .catch(() => setQrDataUrl(null));
-  }, [pass.token]);
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white text-slate-900 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition"
-        >
-          ✕
-        </button>
-
-        <div className="mb-3">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block mb-0.5">
-            Thapar University Gate Clearance
-          </span>
-          <h3 className="text-lg font-black text-slate-900 tracking-tight">
-            Digital Guest Pass
-          </h3>
-        </div>
-
-        {/* High-Contrast Crisp QR */}
-        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 inline-block mb-3 shadow-inner">
-          {qrDataUrl ? (
-            <img src={qrDataUrl} alt="Gate Pass QR" className="w-48 h-48 mx-auto" />
-          ) : (
-            <div className="w-48 h-48 flex items-center justify-center">
-              <Loader2 className="animate-spin text-slate-800" size={28} />
-            </div>
-          )}
-        </div>
-
-        {/* Token Code */}
-        <div className="font-mono text-base font-black text-slate-900 bg-slate-100 py-1.5 px-3 rounded-xl inline-block mb-3 border border-slate-200">
-          {pass.token}
-        </div>
-
-        <div className="space-y-1 text-left bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs">
-          <div className="flex justify-between">
-            <span className="text-slate-500 font-medium">Guest:</span>
-            <span className="font-bold text-slate-900">{pass.guestName}</span>
-          </div>
-          {pass.purpose && (
-            <div className="flex justify-between">
-              <span className="text-slate-500 font-medium">Purpose:</span>
-              <span className="font-semibold text-slate-800">{pass.purpose}</span>
-            </div>
-          )}
-          {pass.vehicleNumber && (
-            <div className="flex justify-between">
-              <span className="text-slate-500 font-medium">Vehicle:</span>
-              <span className="font-mono font-bold text-slate-900 uppercase">
-                {pass.vehicleNumber}
-              </span>
-            </div>
-          )}
-          {pass.validUntil && (
-            <div className="flex justify-between">
-              <span className="text-slate-500 font-medium">Valid Till:</span>
-              <span className="font-semibold text-slate-800">
-                {new Date(pass.validUntil).toLocaleDateString()}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <PassShareBox
-          token={pass.token}
-          title="Guest Pass"
-          guestName={pass.guestName}
-          purpose={pass.purpose}
-          phone={pass.guestPhone}
-          qrDataUrl={qrDataUrl}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 5. White HouseHelpQRModal (Domestic Staff)
-// ─────────────────────────────────────────────────────────────────────────────
-function HouseHelpQRModal({ help, onClose }: { help: HouseHelpDTO; onClose: () => void }) {
-  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    QRCode.toDataURL(help.token, {
-      width: 380,
-      margin: 2,
-      color: { dark: "#0f172a", light: "#ffffff" },
-    })
-      .then(setQrDataUrl)
-      .catch(() => setQrDataUrl(null));
-  }, [help.token]);
-
-  return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-white text-slate-900 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition"
-        >
-          ✕
-        </button>
-
-        <div className="mb-3">
-          <span className="text-[10px] font-extrabold uppercase tracking-widest text-purple-600 block mb-0.5">
-            Permanent Domestic Staff Clearance
-          </span>
-          <h3 className="text-lg font-black text-slate-900 tracking-tight">
-            Master Security QR Pass
-          </h3>
-        </div>
-
-        {/* High-Contrast Crisp QR */}
-        <div className="bg-slate-50 p-3 rounded-2xl border border-slate-200 inline-block mb-3 shadow-inner">
-          {qrDataUrl ? (
-            <img src={qrDataUrl} alt="Domestic Staff QR" className="w-48 h-48 mx-auto" />
-          ) : (
-            <div className="w-48 h-48 flex items-center justify-center">
-              <Loader2 className="animate-spin text-purple-700" size={28} />
-            </div>
-          )}
-        </div>
-
-        {/* Token Code */}
-        <div className="font-mono text-base font-black text-slate-900 bg-purple-50 text-purple-900 py-1.5 px-3 rounded-xl inline-block mb-3 border border-purple-200">
-          {help.token}
-        </div>
-
-        <div className="space-y-1 text-left bg-slate-50 p-3.5 rounded-2xl border border-slate-200 text-xs">
-          <div className="flex justify-between">
-            <span className="text-slate-500 font-medium">Name:</span>
-            <span className="font-bold text-slate-900">{help.name}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500 font-medium">Service:</span>
-            <span className="font-bold text-purple-700 uppercase">{help.serviceType}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate-500 font-medium">Quarter:</span>
-            <span className="font-semibold text-slate-800">{help.quarterNumber}</span>
-          </div>
-          {help.idProofNumber && (
-            <div className="flex justify-between">
-              <span className="text-slate-500 font-medium">{help.idProofType || "Govt ID"}:</span>
-              <span className="font-mono font-bold text-slate-900">{help.idProofNumber}</span>
-            </div>
-          )}
-        </div>
-
-        <PassShareBox
-          token={help.token}
-          title="Domestic Staff Security Pass"
-          guestName={help.name}
-          purpose={`${help.serviceType} • Quarter ${help.quarterNumber}`}
-          phone={help.phone}
-          qrDataUrl={qrDataUrl}
-        />
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 6. CreatePassModal Component
-// ─────────────────────────────────────────────────────────────────────────────
-function CreatePassModal({
+function CreateGuestPassModal({
   onClose,
   onCreated,
 }: {
@@ -1023,84 +669,70 @@ function CreatePassModal({
 }) {
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
-  const [vehicleNumber, setVehicleNumber] = useState("");
   const [purpose, setPurpose] = useState("Academic Guest / Faculty Visit");
   const [visitType, setVisitType] = useState<"OFFICIAL" | "PERSONAL">("OFFICIAL");
-  const [validFrom, setValidFrom] = useState(new Date().toISOString().split("T")[0]);
-  const [validUntil, setValidUntil] = useState(new Date().toISOString().split("T")[0]);
+  const [vehicleNumber, setVehicleNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    if (!guestName.trim()) {
+      setError("Please enter the guest full name");
+      return;
+    }
 
     try {
-      const digitsOnly = guestPhone.replace(/[^0-9]/g, "");
-      const cleanPhone = digitsOnly.length >= 10 ? digitsOnly.slice(-10) : "";
-
-      if (guestPhone.trim() && cleanPhone.length !== 10) {
-        throw new Error("Guest mobile number must be exactly 10 digits");
-      }
-
-      const fromDate = new Date(`${validFrom}T00:00:00.000Z`);
-      const toDate = new Date(`${validUntil}T23:59:59.999Z`);
-
+      setLoading(true);
+      setError(null);
       const res = await createVIPPass({
         guestName: guestName.trim(),
-        guestPhone: cleanPhone || undefined,
+        guestPhone: guestPhone.trim() || undefined,
         visitType,
-        purpose: purpose.trim(),
-        vehicleNumber: vehicleNumber ? vehicleNumber.toUpperCase().replace(/\s+/g, "").trim() : undefined,
-        validFrom: fromDate.toISOString(),
-        validUntil: toDate.toISOString(),
+        purpose: purpose.trim() || "Campus Visit",
+        vehicleNumber: vehicleNumber ? vehicleNumber.toUpperCase().trim() : undefined,
       });
       onCreated(res);
     } catch (err: any) {
-      setError(err?.message || "Failed to generate pass.");
+      setError(err?.message || "Failed to create pass");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-md shadow-2xl">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-base font-bold text-white">Issue Visitor Gate Pass</h3>
-            <p className="text-xs text-slate-400">Direct Guard Access • Instant 1-Scan Gate Entry</p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
-            ✕
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 className="text-base font-bold text-white tracking-tight">Issue Visitor Gate Pass</h3>
+          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+            <X size={16} />
           </button>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
-            ⚠️ {error}
+          <div className="rounded-xl bg-rose-950/60 border border-rose-800/60 p-3 text-xs text-rose-300">
+            {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
-          {/* Visit Type Toggle */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Purpose Category</label>
-            <div className="grid grid-cols-2 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <label className="text-xs font-semibold text-slate-400">Purpose Category</label>
+            <div className="grid grid-cols-2 gap-2 mt-1">
               <button
                 type="button"
                 onClick={() => {
                   setVisitType("OFFICIAL");
-                  setPurpose("Official Meeting / Academic Guest");
+                  setPurpose("Official Academic Meeting");
                 }}
-                className={`py-1.5 text-xs font-bold rounded-lg transition ${
+                className={`py-2 px-3 rounded-xl text-xs font-semibold transition ${
                   visitType === "OFFICIAL"
-                    ? "bg-slate-800 text-white shadow"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-slate-950 text-slate-400 border border-slate-800 hover:border-slate-700"
                 }`}
               >
-                Official / Meeting
+                Official / Academic
               </button>
               <button
                 type="button"
@@ -1108,106 +740,78 @@ function CreatePassModal({
                   setVisitType("PERSONAL");
                   setPurpose("Personal Guest / Relative Visit");
                 }}
-                className={`py-1.5 text-xs font-bold rounded-lg transition ${
+                className={`py-2 px-3 rounded-xl text-xs font-semibold transition ${
                   visitType === "PERSONAL"
-                    ? "bg-slate-800 text-white shadow"
-                    : "text-slate-400 hover:text-white"
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "bg-slate-950 text-slate-400 border border-slate-800 hover:border-slate-700"
                 }`}
               >
-                Personal / Visitor
+                Personal / Relative
               </button>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">Guest Full Name *</label>
+            <label className="text-xs font-semibold text-slate-400">
+              Guest Full Name <span className="text-rose-400">*</span>
+            </label>
             <input
               type="text"
-              required
               placeholder="e.g. Dr. Arvind Subramanian"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Mobile Number (10 Digits, Optional)
-            </label>
+            <label className="text-xs font-semibold text-slate-400">Mobile Phone Number (Optional)</label>
             <input
               type="tel"
-              maxLength={10}
               placeholder="e.g. 9876543210"
               value={guestPhone}
               onChange={(e) => setGuestPhone(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-slate-600"
+              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 font-mono focus:border-blue-500 focus:outline-none"
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Vehicle Plate (Optional)
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. PB11BH8820"
-                value={vehicleNumber}
-                onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono uppercase focus:outline-none focus:border-slate-600"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Purpose of Visit</label>
-              <input
-                type="text"
-                value={purpose}
-                onChange={(e) => setPurpose(e.target.value)}
-                placeholder="e.g. External Reviewer"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
-              />
-            </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-400">Purpose Description</label>
+            <input
+              type="text"
+              placeholder="e.g. PhD Defense External Examiner"
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+            />
           </div>
 
-          {/* Full-Day Date Range */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Valid From</label>
-              <input
-                type="date"
-                required
-                value={validFrom}
-                onChange={(e) => setValidFrom(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Valid Until</label>
-              <input
-                type="date"
-                required
-                value={validUntil}
-                onChange={(e) => setValidUntil(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none"
-              />
-            </div>
+          <div>
+            <label className="text-xs font-semibold text-slate-400">Vehicle License Plate (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. PB11BH8820"
+              value={vehicleNumber}
+              onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
+              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 font-mono uppercase focus:border-blue-500 focus:outline-none"
+            />
           </div>
 
-          <div className="pt-3 border-t border-slate-800 flex justify-end gap-2.5">
+          <div className="mt-5 flex items-center justify-end gap-2.5 border-t border-slate-800 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !guestName.trim()}
-              className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold transition-all disabled:opacity-50 active:scale-95"
+              className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2 text-xs font-bold text-white shadow-sm transition disabled:opacity-50"
             >
-              {loading ? "Issuing..." : "Issue Guest Pass"}
+              {loading && <Loader2 size={13} className="animate-spin" />}
+              Issue Gate Pass
             </button>
           </div>
         </form>
@@ -1216,10 +820,7 @@ function CreatePassModal({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 7. AddHouseHelpModal (with Base64 Document & Selfie Uploads)
-// ─────────────────────────────────────────────────────────────────────────────
-function AddHouseHelpModal({
+function AddDomesticStaffModal({
   onClose,
   onCreated,
 }: {
@@ -1229,341 +830,206 @@ function AddHouseHelpModal({
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [serviceType, setServiceType] = useState("MAID");
-  const [quarterNumber, setQuarterNumber] = useState("Faculty Residence B-104");
+  const [quarterNumber, setQuarterNumber] = useState("Faculty Residence Block B");
   const [workShift, setWorkShift] = useState("Morning (07:00 - 11:00)");
   const [idProofType, setIdProofType] = useState("AADHAAR");
   const [idProofNumber, setIdProofNumber] = useState("");
-  const [idProofDocUrl, setIdProofDocUrl] = useState("");
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [validUntil, setValidUntil] = useState(
-    new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString().split("T")[0]
-  );
+  const [idProofDocUrl, setIdProofDocUrl] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const docInputRef = useRef<HTMLInputElement | null>(null);
-  const photoInputRef = useRef<HTMLInputElement | null>(null);
-
-  const SERVICE_TYPES = [
-    { id: "MAID", label: "Maid / Domestic Help" },
-    { id: "COOK", label: "Cook / Chef" },
-    { id: "DRIVER", label: "Driver" },
-    { id: "CLEANER", label: "Cleaner" },
-    { id: "GARDENER", label: "Gardener" },
-    { id: "OTHER", label: "Other Staff" },
-  ];
-
-  const ID_PROOF_TYPES = [
-    { id: "AADHAAR", label: "Aadhaar Card" },
-    { id: "VOTER_ID", label: "Voter ID Card" },
-    { id: "DRIVING_LICENSE", label: "Driving License" },
-    { id: "PASSPORT", label: "Passport" },
-    { id: "OTHER", label: "Other Govt Photo ID" },
-  ];
-
-  const handleFileUpload = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: (val: string) => void
-  ) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.size > 5 * 1024 * 1024) {
-      setError("Image file size must be under 5 MB");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone.trim()) {
+      setError("Please enter the 10-digit helper mobile phone");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setter(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    setLoading(true);
-
     try {
-      const cleanPhone = phone.replace(/[^0-9]/g, "").slice(-10);
-      if (cleanPhone.length !== 10) {
-        throw new Error("Valid 10-digit mobile number is required");
-      }
-      if (!quarterNumber.trim()) throw new Error("Quarter / residence is required");
-
+      setLoading(true);
+      setError(null);
       const res = await createStaffHouseHelp({
-        phone: cleanPhone,
+        phone: phone.trim(),
         name: name.trim() || undefined,
         serviceType,
-        quarterNumber: quarterNumber.trim(),
+        quarterNumber,
         workShift,
         idProofType,
         idProofNumber: idProofNumber.trim() || undefined,
         idProofDocUrl: idProofDocUrl || undefined,
         photoUrl: photoUrl || undefined,
-        validUntil: new Date(`${validUntil}T23:59:59.999Z`).toISOString(),
       });
-
-      onCreated(res);
+      onCreated(res.help);
     } catch (err: any) {
-      setError(err?.message || "Failed to register or link staff");
+      setError(err?.message || "Failed to register helper");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-lg shadow-2xl max-h-[90dvh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-base font-bold text-white">Register or Link Domestic Staff</h3>
-            <p className="text-xs text-slate-400">
-              Entering an existing campus mobile number instantly links clearance
-            </p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-1">
-            ✕
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm overflow-y-auto">
+      <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <h3 className="text-base font-bold text-white tracking-tight">Register or Link Domestic Staff</h3>
+          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
+            <X size={16} />
           </button>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
-            ⚠️ {error}
+          <div className="rounded-xl bg-rose-950/60 border border-rose-800/60 p-3 text-xs text-rose-300">
+            {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-3.5">
-          {/* Mobile Number is the linking key */}
-          <div className="p-3 rounded-2xl bg-purple-950/20 border border-purple-500/30 space-y-1">
-            <label className="block text-xs font-bold text-purple-300">
-              Helper Mobile Number (10 Digits) *
+          <div>
+            <label className="text-xs font-semibold text-slate-400">
+              Helper Mobile Phone (10 Digits) <span className="text-rose-400">*</span>
             </label>
             <input
               type="tel"
-              required
-              maxLength={10}
               placeholder="e.g. 9876500111"
+              maxLength={10}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white font-mono focus:outline-none focus:border-purple-500"
+              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 font-mono focus:border-blue-500 focus:outline-none"
             />
-            <p className="text-[11px] text-purple-300/70">
-              Auto-Link: If helper is already cleared on campus, they link immediately.
-            </p>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Helper Full Name
-              </label>
-              <input
-                type="text"
-                placeholder="e.g. Sunita Devi"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Service Category *
-              </label>
-              <select
-                value={serviceType}
-                onChange={(e) => setServiceType(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
-              >
-                {SERVICE_TYPES.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.label}
-                  </option>
-                ))}
-              </select>
+          <div>
+            <label className="text-xs font-semibold text-slate-400">Helper Full Name</label>
+            <input
+              type="text"
+              placeholder="e.g. Sunita Devi"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-slate-400">Service Category</label>
+            <div className="grid grid-cols-2 gap-2 mt-1">
+              {SERVICE_CATEGORIES.map((cat) => (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setServiceType(cat.id)}
+                  className={`py-1.5 px-2.5 rounded-xl text-xs font-semibold text-left transition ${
+                    serviceType === cat.id
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "bg-slate-950 text-slate-400 border border-slate-800 hover:border-slate-700"
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Your Quarter / Residence *
-              </label>
+              <label className="text-xs font-semibold text-slate-400">Residence Quarter</label>
               <input
                 type="text"
-                required
-                placeholder="e.g. Quarter 14B"
                 value={quarterNumber}
                 onChange={(e) => setQuarterNumber(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+                className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
               />
             </div>
+
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">Work Shift</label>
+              <label className="text-xs font-semibold text-slate-400">Work Shift</label>
               <input
                 type="text"
                 value={workShift}
                 onChange={(e) => setWorkShift(e.target.value)}
-                placeholder="e.g. Morning (07:00 - 11:00)"
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+                className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
               />
             </div>
           </div>
 
-          {/* Government ID Proof Details */}
-          <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-            <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
-              Government ID Proof Verification
-            </span>
-
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                  ID Proof Type
+          {/* Document & Face Uploads */}
+          <div className="grid grid-cols-2 gap-3 pt-1">
+            <div>
+              <label className="text-xs font-semibold text-slate-400">Govt ID Scan (Optional)</label>
+              {idProofDocUrl ? (
+                <div className="mt-1 flex items-center justify-between p-2 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-300">
+                  <span>Attached</span>
+                  <button type="button" onClick={() => setIdProofDocUrl(null)} className="text-slate-400 hover:text-rose-400">
+                    <X size={13} />
+                  </button>
+                </div>
+              ) : (
+                <label className="mt-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-2.5 text-xs text-slate-400 hover:text-slate-300">
+                  <Upload size={13} />
+                  <span>Upload Scan</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setIdProofDocUrl(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
                 </label>
-                <select
-                  value={idProofType}
-                  onChange={(e) => setIdProofType(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white focus:outline-none"
-                >
-                  {ID_PROOF_TYPES.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                  ID Proof Number
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 9102-8812-4410"
-                  value={idProofNumber}
-                  onChange={(e) => setIdProofNumber(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white font-mono focus:outline-none"
-                />
-              </div>
+              )}
             </div>
 
-            {/* Document & Selfie Uploads */}
-            <div className="grid grid-cols-2 gap-3 pt-1">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                  Aadhaar / ID Scan (≤ 5MB)
-                </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={docInputRef}
-                  onChange={(e) => handleFileUpload(e, setIdProofDocUrl)}
-                  className="hidden"
-                />
-                {idProofDocUrl ? (
-                  <div className="flex items-center gap-2 p-2 bg-slate-900 border border-slate-700 rounded-xl">
-                    <img
-                      src={idProofDocUrl}
-                      alt="ID Scan"
-                      className="w-8 h-8 rounded-lg object-cover"
-                    />
-                    <span className="text-[10px] text-emerald-400 font-bold truncate">
-                      Document Attached
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setIdProofDocUrl("")}
-                      className="text-slate-500 hover:text-rose-400 ml-auto"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => docInputRef.current?.click()}
-                    className="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
-                  >
-                    <Upload size={13} />
-                    <span>Upload ID Scan</span>
+            <div>
+              <label className="text-xs font-semibold text-slate-400">Helper Photo (Optional)</label>
+              {photoUrl ? (
+                <div className="mt-1 flex items-center justify-between p-2 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-300">
+                  <span>Attached</span>
+                  <button type="button" onClick={() => setPhotoUrl(null)} className="text-slate-400 hover:text-rose-400">
+                    <X size={13} />
                   </button>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                  Helper Face Photo (≤ 5MB)
+                </div>
+              ) : (
+                <label className="mt-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-2.5 text-xs text-slate-400 hover:text-slate-300">
+                  <Upload size={13} />
+                  <span>Upload Selfie</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => setPhotoUrl(reader.result as string);
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
                 </label>
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={photoInputRef}
-                  onChange={(e) => handleFileUpload(e, setPhotoUrl)}
-                  className="hidden"
-                />
-                {photoUrl ? (
-                  <div className="flex items-center gap-2 p-2 bg-slate-900 border border-slate-700 rounded-xl">
-                    <img
-                      src={photoUrl}
-                      alt="Selfie"
-                      className="w-8 h-8 rounded-lg object-cover"
-                    />
-                    <span className="text-[10px] text-emerald-400 font-bold truncate">
-                      Photo Attached
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setPhotoUrl("")}
-                      className="text-slate-500 hover:text-rose-400 ml-auto"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => photoInputRef.current?.click()}
-                    className="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
-                  >
-                    <Upload size={13} />
-                    <span>Upload Photo</span>
-                  </button>
-                )}
-              </div>
+              )}
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Pass Validity Expiration
-            </label>
-            <input
-              type="date"
-              required
-              value={validUntil}
-              onChange={(e) => setValidUntil(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none"
-            />
-          </div>
-
-          <div className="pt-3 border-t border-slate-800 flex justify-end gap-2.5">
+          <div className="mt-5 flex items-center justify-end gap-2.5 border-t border-slate-800 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+              className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !phone.trim()}
-              className="px-5 py-2 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold transition-all disabled:opacity-50 active:scale-95"
+              className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2 text-xs font-bold text-white shadow-sm transition disabled:opacity-50"
             >
-              {loading ? "Registering..." : "Submit Staff Clearance"}
+              {loading && <Loader2 size={13} className="animate-spin" />}
+              Submit Staff Clearance
             </button>
           </div>
         </form>
@@ -1572,162 +1038,214 @@ function AddHouseHelpModal({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 8. StaffLoginPage Component
-// ─────────────────────────────────────────────────────────────────────────────
+function UniversalQRModal({
+  title,
+  sub,
+  name,
+  token,
+  phone,
+  meta,
+  onClose,
+}: {
+  title: string;
+  sub: string;
+  name: string;
+  token: string;
+  phone?: string;
+  meta: { label: string; value: string }[];
+  onClose: () => void;
+}) {
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  // High-reliability global scannable QR link
+  const universalQRImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(
+    token
+  )}`;
+
+  useEffect(() => {
+    QRCode.toDataURL(token, {
+      width: 320,
+      margin: 2,
+      color: { dark: "#0f172a", light: "#ffffff" },
+    })
+      .then(setQrUrl)
+      .catch(() => setQrUrl(null));
+  }, [token]);
+
+  const handleWhatsApp = () => {
+    const msg = `THAPAR UNIVERSITY CAMPUS PASS\n\nPass Type: ${title}\nIssued For: ${name}\nPass Code: ${token}\n\nDigital Scannable QR Pass:\n${universalQRImageUrl}\n\nPresent this QR code at Campus Gates 1–4 for 1-scan barrier clearance.`;
+    const cleanPhone = phone?.replace(/[^0-9]/g, "") || "";
+    const waUrl =
+      cleanPhone.length >= 10
+        ? `https://api.whatsapp.com/send?phone=91${cleanPhone.slice(-10)}&text=${encodeURIComponent(msg)}`
+        : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, "_blank");
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-slate-900 text-center relative space-y-4">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+        >
+          <X size={16} />
+        </button>
+
+        <div>
+          <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 font-mono">{sub}</div>
+          <h3 className="text-lg font-black text-slate-900 mt-0.5">{title}</h3>
+        </div>
+
+        <div className="mx-auto flex justify-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+          {qrUrl ? (
+            <img src={qrUrl} alt="Pass QR" className="h-44 w-44 rounded-lg" />
+          ) : (
+            <div className="flex h-44 w-44 items-center justify-center text-xs text-slate-400">
+              <Loader2 className="animate-spin" />
+            </div>
+          )}
+        </div>
+
+        <div className="font-mono text-base font-black text-blue-700 tracking-wider">{token}</div>
+
+        <div className="rounded-xl bg-slate-50 p-3 text-left text-xs space-y-1.5 border border-slate-100">
+          {meta.map((m, idx) => (
+            <div key={idx} className="flex justify-between">
+              <span className="text-slate-500 font-medium">{m.label}:</span>
+              <span className="font-bold text-slate-900">{m.value}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2 pt-2">
+          <button
+            onClick={handleWhatsApp}
+            className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm"
+          >
+            <Share2 size={14} />
+            <span>WhatsApp</span>
+          </button>
+
+          <button
+            onClick={() => {
+              navigator.clipboard.writeText(token);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            }}
+            className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+          >
+            {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+            <span>{copied ? "Copied" : "Copy Code"}</span>
+          </button>
+
+          {qrUrl && (
+            <a
+              href={qrUrl}
+              download={`Pass_${token}.png`}
+              className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center transition"
+              title="Download PNG QR"
+            >
+              <Download size={14} />
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StaffLoginPage() {
   const [email, setEmail] = useState("staff1@campus.edu");
   const [password, setPassword] = useState("staff123");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async (eUser?: string, ePass?: string) => {
-    const useEmail = (eUser || email).toLowerCase().trim();
-    const usePass = ePass || password;
-
-    if (!useEmail || !usePass) {
-      setError("Please provide your university email and password.");
-      return;
-    }
-
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     setLoading(true);
     setError(null);
-
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: useEmail, password: usePass }),
+      const res = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Invalid credentials.");
-        setLoading(false);
-        return;
+      if (res?.error) {
+        setError("Invalid faculty credentials.");
+      } else {
+        window.location.reload();
       }
-      window.location.href = "/staff";
-    } catch (err: any) {
-      setError(err.message || "Failed to sign in. Please try again.");
+    } catch {
+      setError("Login service unavailable.");
+    } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-7 shadow-2xl">
-        <div className="text-center mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-slate-800 text-slate-300 border border-slate-700 flex items-center justify-center text-2xl shadow mx-auto mb-3 font-bold">
-            🎓
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-2xl backdrop-blur-sm space-y-6">
+        <div className="text-center space-y-1">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-400 mb-2">
+            <Building size={24} />
           </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Faculty &amp; Resident Portal</h2>
-          <p className="text-xs text-slate-400 mt-1">
-            University Campus Parking, Gate Passes &amp; Residence System
-          </p>
+          <h2 className="text-xl font-bold text-white tracking-tight">Thapar Staff Portal</h2>
+          <p className="text-xs text-slate-400">Faculty, Staff &amp; Residence Management</p>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-medium">
-            ⚠️ {error}
+          <div className="rounded-xl bg-rose-950/60 border border-rose-800/60 p-3 text-xs text-rose-300 flex items-center gap-2">
+            <AlertCircle size={14} className="shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        {/* 1-Tap Demo Accounts */}
-        <div className="mb-5 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            ⚡ Quick 1-Tap Faculty Sign-In
-          </p>
-          <div className="space-y-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                setEmail("staff1@campus.edu");
-                setPassword("staff123");
-                handleLogin("staff1@campus.edu", "staff123");
-              }}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-left transition active:scale-98"
-            >
-              <div>
-                <div className="text-xs font-bold text-white">Prof. Rajesh Sharma (HOD CSE)</div>
-                <div className="text-[10px] text-slate-400 font-mono">
-                  staff1@campus.edu • Pass: staff123
-                </div>
-              </div>
-              <span className="text-[11px] font-bold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
-                Sign In
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => {
-                setEmail("prof.kaur@thapar.edu");
-                setPassword("staff123");
-                handleLogin("prof.kaur@thapar.edu", "staff123");
-              }}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-left transition active:scale-98"
-            >
-              <div>
-                <div className="text-xs font-bold text-white">Dr. Simran Kaur (Dean)</div>
-                <div className="text-[10px] text-slate-400 font-mono">
-                  prof.kaur@thapar.edu • Pass: staff123
-                </div>
-              </div>
-              <span className="text-[11px] font-bold text-slate-300 bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700">
-                Sign In
-              </span>
-            </button>
-          </div>
-        </div>
-
-        {/* Credentials Form */}
-        <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="space-y-3">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Official University Email
-            </label>
+            <label className="text-xs font-semibold text-slate-400">Faculty Campus Email</label>
             <input
               type="email"
-              required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="faculty@thapar.edu"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+              required
             />
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold text-slate-300">Password</label>
-              <Link href="/forgot-password" className="text-[11px] text-blue-400 hover:text-blue-300">
-                Forgot password?
-              </Link>
-            </div>
+            <label className="text-xs font-semibold text-slate-400">Password / PIN</label>
             <input
               type="password"
-              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-slate-600"
+              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+              required
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 text-xs font-bold transition shadow-sm mt-2 flex items-center justify-center gap-2 active:scale-98"
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : "Sign In to Portal"}
+            {loading ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+            <span>Sign In to Console</span>
           </button>
         </form>
 
-        <div className="mt-5 text-center">
-          <Link
-            href="/"
-            className="text-xs font-semibold text-slate-400 hover:text-white transition"
+        <div className="border-t border-slate-800 pt-4 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              setEmail("staff1@campus.edu");
+              setPassword("staff123");
+            }}
+            className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition"
           >
-            ← Back to Campus Directory
-          </Link>
+            Fill Demo Faculty Account (staff1@campus.edu)
+          </button>
         </div>
       </div>
     </div>
