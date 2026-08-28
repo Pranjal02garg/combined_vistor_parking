@@ -150,7 +150,7 @@ export default function StaffPortalScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Large 4-Tab Navigation Bar */}
+        {/* Executive Tab Navigation Bar */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -198,15 +198,15 @@ export default function StaffPortalScreen() {
               setRefreshing(true);
               loadAllData();
             }}
-            tintColor="#3b82f6"
+            tintColor="#0f172a"
           />
         }
       >
         {/* TAB 1: PARKING & GATE ACCESS */}
         {activeTab === "parking" && (
           <View style={styles.sectionSpace}>
-            {/* Faculty Permit Large Card */}
-            <View style={styles.cardDark}>
+            {/* Faculty Permit Card */}
+            <View style={styles.cardLight}>
               <View style={styles.cardHeaderRow}>
                 <View style={{ flex: 1, paddingRight: 8 }}>
                   <Text style={styles.cardSuperTitle}>FACULTY PARKING PERMIT</Text>
@@ -220,7 +220,7 @@ export default function StaffPortalScreen() {
                 </View>
               </View>
 
-              {/* 2x2 Gate Selector Grid (Never Overlaps) */}
+              {/* 2x2 Gate Selector Grid */}
               <View style={styles.gatePillsRow}>
                 {["Gate 1", "Gate 2", "Gate 3", "Gate 4"].map((g) => (
                   <TouchableOpacity
@@ -340,7 +340,7 @@ export default function StaffPortalScreen() {
                         <Text style={styles.carPlateMono}>{car.plateNumber}</Text>
                         <Text style={styles.carModelText}>{car.modelName || car.vehicleType}</Text>
                         {car.rcDocUrl && (
-                          <Text style={{ fontSize: 12, color: "#34d399", marginTop: 4, fontWeight: "600" }}>
+                          <Text style={{ fontSize: 12, color: "#059669", marginTop: 4, fontWeight: "600" }}>
                             RC Document Attached
                           </Text>
                         )}
@@ -350,25 +350,21 @@ export default function StaffPortalScreen() {
                           style={[
                             styles.stickerBadge,
                             {
-                              backgroundColor: isGreen
-                                ? "rgba(16, 185, 129, 0.15)"
-                                : isBlue
-                                ? "rgba(14, 165, 233, 0.15)"
-                                : "rgba(244, 63, 94, 0.15)",
-                              borderColor: isGreen ? "#10b981" : isBlue ? "#0ea5e9" : "#f43f5e",
+                              backgroundColor: isGreen ? "#ecfdf5" : isBlue ? "#f0f9ff" : "#fff1f2",
+                              borderColor: isGreen ? "#a7f3d0" : isBlue ? "#bae6fd" : "#fecdd3",
                             },
                           ]}
                         >
                           <Text
                             style={[
                               styles.stickerBadgeText,
-                              { color: isGreen ? "#34d399" : isBlue ? "#38bdf8" : "#fb7185" },
+                              { color: isGreen ? "#059669" : isBlue ? "#0284c7" : "#e11d48" },
                             ]}
                           >
                             {car.stickerColor.toUpperCase()} TIER
                           </Text>
                         </View>
-                        <Text style={styles.viewBadgeHint}>View QR Badge ➔</Text>
+                        <Text style={styles.viewBadgeHint}>View Badge ➔</Text>
                       </View>
                     </TouchableOpacity>
                   );
@@ -386,7 +382,7 @@ export default function StaffPortalScreen() {
                 <Text style={styles.scannerCardTitle}>Scan Gate Barrier Camera QR</Text>
                 <Text style={styles.scannerCardSub}>Point phone camera at gate barrier QR code</Text>
               </View>
-              <Text style={{ color: "#3b82f6", fontSize: 15, fontWeight: "bold" }}>Scan ➔</Text>
+              <Text style={{ color: "#0f172a", fontSize: 14, fontWeight: "bold" }}>Scan ➔</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -437,17 +433,15 @@ export default function StaffPortalScreen() {
                         style={[
                           styles.statusTag,
                           {
-                            backgroundColor: isCheckedIn
-                              ? "rgba(16, 185, 129, 0.15)"
-                              : "rgba(59, 130, 246, 0.15)",
-                            borderColor: isCheckedIn ? "#10b981" : "#3b82f6",
+                            backgroundColor: isCheckedIn ? "#ecfdf5" : "#eff6ff",
+                            borderColor: isCheckedIn ? "#a7f3d0" : "#bfdbfe",
                           },
                         ]}
                       >
                         <Text
                           style={[
                             styles.statusTagText,
-                            { color: isCheckedIn ? "#34d399" : "#60a5fa" },
+                            { color: isCheckedIn ? "#059669" : "#1d4ed8" },
                           ]}
                         >
                           {isCheckedIn ? "● On Campus" : p.status}
@@ -528,17 +522,15 @@ export default function StaffPortalScreen() {
                         style={[
                           styles.statusTag,
                           {
-                            backgroundColor: isActive
-                              ? "rgba(16, 185, 129, 0.15)"
-                              : "rgba(239, 68, 68, 0.15)",
-                            borderColor: isActive ? "#10b981" : "#ef4444",
+                            backgroundColor: isActive ? "#ecfdf5" : "#fff1f2",
+                            borderColor: isActive ? "#a7f3d0" : "#fecdd3",
                           },
                         ]}
                       >
                         <Text
                           style={[
                             styles.statusTagText,
-                            { color: isActive ? "#34d399" : "#f87171" },
+                            { color: isActive ? "#059669" : "#e11d48" },
                           ]}
                         >
                           {isActive ? "Active" : "Paused"}
@@ -574,7 +566,7 @@ export default function StaffPortalScreen() {
                       ) : null}
                     </View>
 
-                    {/* 2-Row Stacked Actions (Never Collides) */}
+                    {/* 2-Row Stacked Actions */}
                     <View style={styles.itemFooterCol}>
                       <TouchableOpacity
                         style={styles.masterQRBtnFull}
@@ -588,10 +580,8 @@ export default function StaffPortalScreen() {
                           style={[
                             styles.toggleActiveBtn,
                             {
-                              backgroundColor: isActive
-                                ? "rgba(16, 185, 129, 0.15)"
-                                : "rgba(239, 68, 68, 0.15)",
-                              borderColor: isActive ? "#10b981" : "#ef4444",
+                              backgroundColor: isActive ? "#ecfdf5" : "#fff1f2",
+                              borderColor: isActive ? "#a7f3d0" : "#fecdd3",
                             },
                           ]}
                           onPress={() => {
@@ -605,7 +595,7 @@ export default function StaffPortalScreen() {
                           <Text
                             style={[
                               styles.toggleActiveText,
-                              { color: isActive ? "#34d399" : "#f87171" },
+                              { color: isActive ? "#059669" : "#e11d48" },
                             ]}
                           >
                             {isActive ? "Pause Clearance" : "Activate Clearance"}
@@ -627,7 +617,7 @@ export default function StaffPortalScreen() {
                             ]);
                           }}
                         >
-                          <Text style={{ color: "#f87171", fontSize: 14, fontWeight: "bold" }}>✕</Text>
+                          <Text style={{ color: "#e11d48", fontSize: 14, fontWeight: "bold" }}>✕</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -767,7 +757,7 @@ export default function StaffPortalScreen() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sub-Modals
+// Sub-Modals (Clean Executive Light)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AddVehicleModal({
@@ -864,7 +854,7 @@ function AddVehicleModal({
             <TextInput
               style={modalStyles.input}
               placeholder="PB11BH8820"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               autoCapitalize="characters"
               value={plate}
               onChangeText={(t) => setPlate(t.toUpperCase())}
@@ -874,7 +864,7 @@ function AddVehicleModal({
             <TextInput
               style={modalStyles.input}
               placeholder="Honda City (White)"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               value={model}
               onChangeText={setModel}
             />
@@ -901,7 +891,7 @@ function AddVehicleModal({
                 <Image source={{ uri: rcDocUrl }} style={modalStyles.uploadThumb} />
                 <Text style={modalStyles.uploadAttachedText}>RC Attached</Text>
                 <TouchableOpacity onPress={() => setRcDocUrl(null)} style={{ marginLeft: "auto" }}>
-                  <Text style={{ color: "#f87171", fontSize: 14, fontWeight: "bold" }}>✕</Text>
+                  <Text style={{ color: "#ef4444", fontSize: 14, fontWeight: "bold" }}>✕</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -1013,7 +1003,7 @@ function CreateGuestPassModal({
             <TextInput
               style={modalStyles.input}
               placeholder="e.g. Dr. Arvind Subramanian"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               value={guestName}
               onChangeText={setGuestName}
             />
@@ -1022,7 +1012,7 @@ function CreateGuestPassModal({
             <TextInput
               style={modalStyles.input}
               placeholder="e.g. 9876543210"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               keyboardType="phone-pad"
               value={guestPhone}
               onChangeText={setGuestPhone}
@@ -1032,7 +1022,7 @@ function CreateGuestPassModal({
             <TextInput
               style={modalStyles.input}
               placeholder="e.g. External Reviewer Meeting"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               value={purpose}
               onChangeText={setPurpose}
             />
@@ -1041,7 +1031,7 @@ function CreateGuestPassModal({
             <TextInput
               style={modalStyles.input}
               placeholder="e.g. PB11BH8820"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               autoCapitalize="characters"
               value={vehicleNumber}
               onChangeText={setVehicleNumber}
@@ -1166,7 +1156,7 @@ function AddHouseHelpModal({
             <TextInput
               style={modalStyles.input}
               placeholder="e.g. 9876500111"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               keyboardType="phone-pad"
               maxLength={10}
               value={phone}
@@ -1177,7 +1167,7 @@ function AddHouseHelpModal({
             <TextInput
               style={modalStyles.input}
               placeholder="e.g. Sunita Devi"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               value={name}
               onChangeText={setName}
             />
@@ -1208,7 +1198,7 @@ function AddHouseHelpModal({
             <TextInput
               style={modalStyles.input}
               placeholder="e.g. Quarter 14B"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               value={quarterNumber}
               onChangeText={setQuarterNumber}
             />
@@ -1239,7 +1229,7 @@ function AddHouseHelpModal({
             <TextInput
               style={modalStyles.input}
               placeholder="e.g. 9102-8812-4410"
-              placeholderTextColor="#64748b"
+              placeholderTextColor="#94a3b8"
               value={idProofNumber}
               onChangeText={setIdProofNumber}
             />
@@ -1254,7 +1244,7 @@ function AddHouseHelpModal({
                     <Image source={{ uri: idProofDocUrl }} style={modalStyles.uploadThumb} />
                     <Text style={modalStyles.uploadAttachedText}>Attached</Text>
                     <TouchableOpacity onPress={() => setIdProofDocUrl(null)} style={{ marginLeft: "auto" }}>
-                      <Text style={{ color: "#f87171", fontSize: 14, fontWeight: "bold" }}>✕</Text>
+                      <Text style={{ color: "#ef4444", fontSize: 14, fontWeight: "bold" }}>✕</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -1272,7 +1262,7 @@ function AddHouseHelpModal({
                     <Image source={{ uri: photoUrl }} style={modalStyles.uploadThumb} />
                     <Text style={modalStyles.uploadAttachedText}>Attached</Text>
                     <TouchableOpacity onPress={() => setPhotoUrl(null)} style={{ marginLeft: "auto" }}>
-                      <Text style={{ color: "#f87171", fontSize: 14, fontWeight: "bold" }}>✕</Text>
+                      <Text style={{ color: "#ef4444", fontSize: 14, fontWeight: "bold" }}>✕</Text>
                     </TouchableOpacity>
                   </View>
                 ) : (
@@ -1284,7 +1274,7 @@ function AddHouseHelpModal({
             </View>
 
             <TouchableOpacity
-              style={[modalStyles.submitBtn, { backgroundColor: "#2563eb" }]}
+              style={modalStyles.submitBtn}
               onPress={handleSubmit}
               disabled={saving}
             >
@@ -1369,12 +1359,11 @@ function WhiteQRModal({
   const [sharing, setSharing] = useState(false);
   const qrSvgRef = useRef<any>(null);
 
-  // Global scannable QR image link that opens on ANY phone/network in the world
+  // Global scannable QR image link
   const universalQRImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(
     token
   )}`;
 
-  // 1. Export actual PNG file and share it via Share Sheet into WhatsApp / Photos
   const handleShareQRImageFile = async () => {
     try {
       setSharing(true);
@@ -1419,7 +1408,6 @@ function WhiteQRModal({
     }
   };
 
-  // 2. Direct WhatsApp text message with the working universal QR link
   const handleWhatsAppMessage = async () => {
     const msg = `THAPAR UNIVERSITY GATE CLEARANCE\n\nPass: ${title}\nIssued For: ${name}\nToken Code: ${token}\n\nInstant Scannable QR Pass:\n${universalQRImageUrl}\n\nPresent this QR code to security at Gate 1–4 for 1-scan barrier entry.`;
     const cleanPhone = phone?.replace(/[^0-9]/g, "") || "";
@@ -1478,7 +1466,7 @@ function WhiteQRModal({
             ))}
           </View>
 
-          {/* Dual Action Buttons (Large) */}
+          {/* Dual Action Buttons */}
           <View style={{ gap: 10, width: "100%" }}>
             <TouchableOpacity
               style={modalStyles.shareImgMainBtn}
@@ -1508,11 +1496,11 @@ function WhiteQRModal({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Styles
+// Executive Light Styles
 // ─────────────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safeContainer: { flex: 1, backgroundColor: "#020617" },
-  topHeader: { backgroundColor: "#090d16", borderBottomWidth: 1, borderBottomColor: "#1e293b" },
+  safeContainer: { flex: 1, backgroundColor: "#f8fafc" },
+  topHeader: { backgroundColor: "#ffffff", borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
   headerTitleRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1524,34 +1512,32 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: "#1e293b",
-    borderWidth: 1,
-    borderColor: "#334155",
+    backgroundColor: "#0f172a",
     alignItems: "center",
     justifyContent: "center",
   },
-  crestText: { fontSize: 16, fontWeight: "900", color: "#f8fafc" },
-  mainTitle: { fontSize: 17, fontWeight: "900", color: "#ffffff", letterSpacing: -0.3 },
+  crestText: { fontSize: 16, fontWeight: "900", color: "#ffffff" },
+  mainTitle: { fontSize: 18, fontWeight: "900", color: "#0f172a", letterSpacing: -0.3 },
   facultyPill: {
-    backgroundColor: "#1e3a8a",
-    paddingHorizontal: 6,
+    backgroundColor: "#eff6ff",
+    paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 6,
     borderWidth: 1,
-    borderColor: "#2563eb",
+    borderColor: "#bfdbfe",
   },
-  facultyPillText: { color: "#bfdbfe", fontSize: 9, fontWeight: "800" },
-  facultySub: { fontSize: 12, color: "#94a3b8", marginTop: 2, fontWeight: "500" },
+  facultyPillText: { color: "#1d4ed8", fontSize: 10, fontWeight: "800" },
+  facultySub: { fontSize: 13, color: "#64748b", marginTop: 2, fontWeight: "500" },
   signOutBtn: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#ffffff",
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: "#e2e8f0",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 10,
   },
-  signOutText: { color: "#cbd5e1", fontSize: 12, fontWeight: "700" },
-  tabsScrollBar: { borderTopWidth: 1, borderTopColor: "#1e293b" },
+  signOutText: { color: "#475569", fontSize: 12, fontWeight: "700" },
+  tabsScrollBar: { borderTopWidth: 1, borderTopColor: "#f1f5f9" },
   tabsScrollContent: { paddingHorizontal: 14, paddingVertical: 10, gap: 8 },
   tabButton: {
     flexDirection: "row",
@@ -1560,63 +1546,68 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 9,
     borderRadius: 12,
-    backgroundColor: "#0f172a",
+    backgroundColor: "#f1f5f9",
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: "#e2e8f0",
   },
   tabButtonActive: {
-    backgroundColor: "#2563eb",
-    borderColor: "#3b82f6",
+    backgroundColor: "#0f172a",
+    borderColor: "#0f172a",
   },
-  tabLabel: { fontSize: 13, fontWeight: "700", color: "#94a3b8" },
+  tabLabel: { fontSize: 13, fontWeight: "700", color: "#64748b" },
   tabLabelActive: { color: "#ffffff" },
   tabBadge: {
-    backgroundColor: "#1e293b",
+    backgroundColor: "#e2e8f0",
     paddingHorizontal: 7,
     paddingVertical: 2,
     borderRadius: 8,
   },
   tabBadgeActive: { backgroundColor: "#ffffff" },
-  tabBadgeText: { fontSize: 11, fontWeight: "800", color: "#94a3b8" },
-  tabBadgeTextActive: { color: "#1e3a8a" },
-  mainContent: { flex: 1, backgroundColor: "#020617" },
+  tabBadgeText: { fontSize: 11, fontWeight: "800", color: "#475569" },
+  tabBadgeTextActive: { color: "#0f172a" },
+  mainContent: { flex: 1, backgroundColor: "#f8fafc" },
   scrollPadding: { padding: 18, paddingBottom: 70 },
   sectionSpace: { gap: 18 },
-  cardDark: {
-    backgroundColor: "#0f172a",
+  cardLight: {
+    backgroundColor: "#ffffff",
     borderRadius: 22,
     padding: 20,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: "#e2e8f0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  cardSuperTitle: { fontSize: 11, fontWeight: "900", color: "#3b82f6", letterSpacing: 0.5 },
-  cardBigTitle: { fontSize: 22, fontWeight: "900", color: "#ffffff", marginTop: 4 },
-  cardMetaText: { fontSize: 13, color: "#94a3b8", marginTop: 4, fontWeight: "500" },
+  cardSuperTitle: { fontSize: 11, fontWeight: "900", color: "#0284c7", letterSpacing: 0.5 },
+  cardBigTitle: { fontSize: 22, fontWeight: "900", color: "#0f172a", marginTop: 4 },
+  cardMetaText: { fontSize: 13, color: "#64748b", marginTop: 4, fontWeight: "500" },
   activePermitPill: {
-    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    backgroundColor: "#ecfdf5",
     borderWidth: 1,
-    borderColor: "#10b981",
+    borderColor: "#a7f3d0",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 8,
   },
-  activePermitText: { color: "#34d399", fontSize: 10, fontWeight: "900" },
+  activePermitText: { color: "#059669", fontSize: 10, fontWeight: "900" },
   gatePillsRow: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 8, marginTop: 16, marginBottom: 12 },
   gatePill: {
     width: "48%",
-    backgroundColor: "#020617",
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#e2e8f0",
     paddingVertical: 10,
     borderRadius: 12,
     alignItems: "center",
   },
-  gatePillActive: { backgroundColor: "#1e3a8a", borderColor: "#2563eb" },
-  gatePillText: { color: "#94a3b8", fontSize: 13, fontWeight: "700" },
+  gatePillActive: { backgroundColor: "#0f172a", borderColor: "#0f172a" },
+  gatePillText: { color: "#64748b", fontSize: 13, fontWeight: "700" },
   gatePillTextActive: { color: "#ffffff" },
   barrierPulseBtn: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#059669",
     borderRadius: 14,
     paddingVertical: 15,
     paddingHorizontal: 16,
@@ -1624,17 +1615,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   barrierPulseText: { color: "#ffffff", fontSize: 15, fontWeight: "900" },
-  barrierPulseSub: { color: "#bfdbfe", fontSize: 11, marginTop: 2 },
+  barrierPulseSub: { color: "#d1fae5", fontSize: 11, marginTop: 2 },
   btnDisabled: { opacity: 0.5 },
   barrierToast: {
-    backgroundColor: "rgba(16, 185, 129, 0.15)",
+    backgroundColor: "#ecfdf5",
     borderWidth: 1,
-    borderColor: "#10b981",
+    borderColor: "#a7f3d0",
     padding: 12,
     borderRadius: 12,
     marginTop: 10,
   },
-  barrierToastText: { color: "#34d399", fontSize: 13, fontWeight: "700", textAlign: "center" },
+  barrierToastText: { color: "#065f46", fontSize: 13, fontWeight: "700", textAlign: "center" },
   blockSection: { marginTop: 6 },
   blockSectionHeader: {
     flexDirection: "row",
@@ -1642,51 +1633,61 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 10,
   },
-  blockTitle: { fontSize: 15, fontWeight: "900", color: "#f8fafc" },
+  blockTitle: { fontSize: 15, fontWeight: "900", color: "#0f172a" },
   blockSub: { fontSize: 12, color: "#64748b" },
-  accentLink: { color: "#3b82f6", fontSize: 13, fontWeight: "700" },
+  accentLink: { color: "#2563eb", fontSize: 13, fontWeight: "700" },
   lotMeterCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#ffffff",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: "#e2e8f0",
     width: 170,
     marginRight: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   lotMeterTop: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
-  lotCodeText: { color: "#3b82f6", fontSize: 12, fontWeight: "900" },
-  lotFreeText: { color: "#34d399", fontSize: 12, fontWeight: "800" },
-  lotNameText: { color: "#ffffff", fontSize: 13, fontWeight: "700" },
-  lotOccupancyText: { color: "#94a3b8", fontSize: 11, marginTop: 4, marginBottom: 8 },
-  lotProgressTrack: { height: 6, backgroundColor: "#1e293b", borderRadius: 3, overflow: "hidden" },
+  lotCodeText: { color: "#0284c7", fontSize: 12, fontWeight: "900" },
+  lotFreeText: { color: "#059669", fontSize: 12, fontWeight: "800" },
+  lotNameText: { color: "#0f172a", fontSize: 13, fontWeight: "700" },
+  lotOccupancyText: { color: "#64748b", fontSize: 11, marginTop: 4, marginBottom: 8 },
+  lotProgressTrack: { height: 6, backgroundColor: "#f1f5f9", borderRadius: 3, overflow: "hidden" },
   lotProgressBar: { height: "100%", borderRadius: 3 },
   carRowCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#ffffff",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: "#e2e8f0",
     marginBottom: 8,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  carPlateMono: { color: "#ffffff", fontSize: 16, fontWeight: "900", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
-  carModelText: { color: "#94a3b8", fontSize: 12, marginTop: 2 },
+  carPlateMono: { color: "#0f172a", fontSize: 16, fontWeight: "900", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
+  carModelText: { color: "#64748b", fontSize: 12, marginTop: 2 },
   stickerBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
   stickerBadgeText: { fontSize: 10, fontWeight: "800" },
-  viewBadgeHint: { color: "#3b82f6", fontSize: 12, fontWeight: "700", marginTop: 4 },
+  viewBadgeHint: { color: "#2563eb", fontSize: 12, fontWeight: "700", marginTop: 4 },
   scannerPromptCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#ffffff",
     borderRadius: 18,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: "#e2e8f0",
     flexDirection: "row",
     alignItems: "center",
   },
-  scannerCardTitle: { color: "#ffffff", fontSize: 14, fontWeight: "800" },
+  scannerCardTitle: { color: "#0f172a", fontSize: 14, fontWeight: "800" },
   scannerCardSub: { color: "#64748b", fontSize: 12, marginTop: 2 },
   tabSectionHeaderRow: {
     flexDirection: "row",
@@ -1694,42 +1695,47 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 6,
   },
-  tabSectionBigTitle: { fontSize: 20, fontWeight: "900", color: "#ffffff" },
+  tabSectionBigTitle: { fontSize: 20, fontWeight: "900", color: "#0f172a" },
   tabSectionDesc: { fontSize: 12, color: "#64748b", marginTop: 2 },
   primaryAddBtn: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#0f172a",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 12,
   },
   primaryAddBtnText: { color: "#ffffff", fontSize: 13, fontWeight: "800" },
   itemCard: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#ffffff",
     borderRadius: 20,
     padding: 18,
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: "#e2e8f0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
+    elevation: 1,
   },
   cardTopRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
-  categoryTag: { backgroundColor: "#1e293b", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  categoryTagText: { color: "#cbd5e1", fontSize: 11, fontWeight: "800", textTransform: "uppercase" },
+  categoryTag: { backgroundColor: "#f1f5f9", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  categoryTagText: { color: "#475569", fontSize: 11, fontWeight: "800", textTransform: "uppercase" },
   statusTag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1 },
   statusTagText: { fontSize: 11, fontWeight: "800", textTransform: "uppercase" },
-  purpleTag: { backgroundColor: "rgba(59, 130, 246, 0.15)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  purpleTagText: { color: "#60a5fa", fontSize: 11, fontWeight: "800", textTransform: "uppercase" },
-  itemName: { fontSize: 17, fontWeight: "800", color: "#ffffff" },
-  itemPhone: { fontSize: 13, color: "#94a3b8", marginTop: 2, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
+  purpleTag: { backgroundColor: "#eff6ff", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  purpleTagText: { color: "#1d4ed8", fontSize: 11, fontWeight: "800", textTransform: "uppercase" },
+  itemName: { fontSize: 17, fontWeight: "800", color: "#0f172a" },
+  itemPhone: { fontSize: 13, color: "#64748b", marginTop: 2, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
   vehiclePlateTag: {
-    backgroundColor: "#020617",
+    backgroundColor: "#f8fafc",
     alignSelf: "flex-start",
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#e2e8f0",
     marginTop: 8,
   },
-  vehiclePlateTagText: { color: "#cbd5e1", fontSize: 12, fontWeight: "700" },
+  vehiclePlateTagText: { color: "#334155", fontSize: 12, fontWeight: "700" },
   itemFooterRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1737,32 +1743,32 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(30, 41, 59, 0.8)",
+    borderTopColor: "#f1f5f9",
   },
   itemFooterCol: {
     marginTop: 14,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "rgba(30, 41, 59, 0.8)",
+    borderTopColor: "#f1f5f9",
     gap: 8,
   },
-  itemCodeMono: { fontSize: 12, color: "#64748b", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
+  itemCodeMono: { fontSize: 12, color: "#94a3b8", fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
   itemActionBtn: {
-    backgroundColor: "#1e293b",
+    backgroundColor: "#f8fafc",
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#e2e8f0",
   },
-  itemActionBtnText: { color: "#93c5fd", fontSize: 12, fontWeight: "800" },
+  itemActionBtnText: { color: "#0f172a", fontSize: 12, fontWeight: "800" },
   helpAvatar: {
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: "rgba(59, 130, 246, 0.15)",
+    backgroundColor: "#f1f5f9",
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.3)",
+    borderColor: "#e2e8f0",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1771,81 +1777,79 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#2563eb",
+    borderColor: "#e2e8f0",
   },
-  helpAvatarText: { color: "#60a5fa", fontSize: 16, fontWeight: "900" },
-  helpDetailsSubBox: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: "rgba(30, 41, 59, 0.6)", gap: 4 },
-  helpDetailLine: { fontSize: 13, color: "#cbd5e1" },
-  helpIdLine: { fontSize: 12, color: "#34d399", fontWeight: "700" },
-  helpShiftLine: { fontSize: 12, color: "#94a3b8" },
+  helpAvatarText: { color: "#475569", fontSize: 16, fontWeight: "900" },
+  helpDetailsSubBox: { marginTop: 12, paddingTop: 10, borderTopWidth: 1, borderTopColor: "#f1f5f9", gap: 4 },
+  helpDetailLine: { fontSize: 13, color: "#334155" },
+  helpIdLine: { fontSize: 12, color: "#059669", fontWeight: "700" },
+  helpShiftLine: { fontSize: 12, color: "#64748b" },
   masterQRBtnFull: {
-    backgroundColor: "#1e293b",
+    backgroundColor: "#0f172a",
     paddingVertical: 10,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#334155",
     alignItems: "center",
     width: "100%",
   },
-  masterQRBtnText: { color: "#93c5fd", fontSize: 13, fontWeight: "800" },
+  masterQRBtnText: { color: "#ffffff", fontSize: 13, fontWeight: "800" },
   helperActionsSubRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   toggleActiveBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: "center" },
   toggleActiveText: { fontSize: 12, fontWeight: "800" },
-  trashBtn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, backgroundColor: "#1e293b", alignItems: "center" },
-  noticeCard: { backgroundColor: "#0f172a", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#1e293b" },
-  noticeTitle: { fontSize: 16, fontWeight: "800", color: "#ffffff", flex: 1 },
-  severityTag: { backgroundColor: "rgba(245, 158, 11, 0.15)", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  severityTagText: { color: "#fbbf24", fontSize: 11, fontWeight: "800" },
-  noticeDate: { fontSize: 12, color: "#64748b", marginTop: 4 },
-  noticeDesc: { fontSize: 13, color: "#cbd5e1", marginTop: 8, lineHeight: 18 },
+  trashBtn: { paddingVertical: 10, paddingHorizontal: 14, borderRadius: 10, backgroundColor: "#ffffff", borderWidth: 1, borderColor: "#e2e8f0", alignItems: "center" },
+  noticeCard: { backgroundColor: "#ffffff", borderRadius: 20, padding: 18, borderWidth: 1, borderColor: "#e2e8f0" },
+  noticeTitle: { fontSize: 16, fontWeight: "800", color: "#0f172a", flex: 1 },
+  severityTag: { backgroundColor: "#fef3c7", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  severityTagText: { color: "#92400e", fontSize: 11, fontWeight: "800" },
+  noticeDate: { fontSize: 12, color: "#94a3b8", marginTop: 4 },
+  noticeDesc: { fontSize: 13, color: "#475569", marginTop: 8, lineHeight: 18 },
   resolutionBox: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: "rgba(16, 185, 129, 0.1)",
+    backgroundColor: "#ecfdf5",
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "rgba(16, 185, 129, 0.2)",
+    borderColor: "#a7f3d0",
   },
-  resolutionTitle: { fontSize: 12, fontWeight: "800", color: "#34d399" },
-  resolutionText: { fontSize: 12, color: "#a7f3d0", marginTop: 2 },
+  resolutionTitle: { fontSize: 12, fontWeight: "800", color: "#065f46" },
+  resolutionText: { fontSize: 12, color: "#047857", marginTop: 2 },
   emptyBox: {
-    backgroundColor: "#0f172a",
+    backgroundColor: "#ffffff",
     borderRadius: 22,
     padding: 30,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#1e293b",
+    borderColor: "#cbd5e1",
     borderStyle: "dashed",
   },
-  emptyTitle: { fontSize: 16, fontWeight: "800", color: "#ffffff" },
+  emptyTitle: { fontSize: 16, fontWeight: "800", color: "#0f172a" },
   emptySub: { fontSize: 13, color: "#64748b", textAlign: "center", marginTop: 4, marginBottom: 16 },
-  emptyActionBtn: { backgroundColor: "#f8fafc", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
-  emptyActionText: { color: "#0f172a", fontSize: 13, fontWeight: "800" },
+  emptyActionBtn: { backgroundColor: "#0f172a", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
+  emptyActionText: { color: "#ffffff", fontSize: 13, fontWeight: "800" },
 });
 
 const modalStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", padding: 20 },
-  card: { backgroundColor: "#0f172a", borderRadius: 24, padding: 22, borderWidth: 1, borderColor: "#1e293b", maxHeight: "90%" },
+  overlay: { flex: 1, backgroundColor: "rgba(15, 23, 42, 0.6)", justifyContent: "center", padding: 20 },
+  card: { backgroundColor: "#ffffff", borderRadius: 24, padding: 22, borderWidth: 1, borderColor: "#e2e8f0", maxHeight: "90%", shadowColor: "#000", shadowOpacity: 0.15, shadowRadius: 10, elevation: 5 },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 },
-  title: { fontSize: 18, fontWeight: "900", color: "#ffffff" },
-  closeIcon: { fontSize: 18, color: "#94a3b8", padding: 4 },
-  label: { fontSize: 12, fontWeight: "800", color: "#cbd5e1", marginTop: 10, marginBottom: 6 },
+  title: { fontSize: 18, fontWeight: "900", color: "#0f172a" },
+  closeIcon: { fontSize: 18, color: "#64748b", padding: 4 },
+  label: { fontSize: 12, fontWeight: "800", color: "#475569", marginTop: 10, marginBottom: 6 },
   input: {
-    backgroundColor: "#020617",
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#cbd5e1",
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 11,
-    color: "#ffffff",
+    color: "#0f172a",
     fontSize: 14,
   },
   tierRow: { flexDirection: "row", gap: 8 },
   tierBtn: {
     flex: 1,
-    backgroundColor: "#020617",
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#e2e8f0",
     paddingVertical: 9,
     paddingHorizontal: 10,
     borderRadius: 10,
@@ -1853,11 +1857,11 @@ const modalStyles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
   },
-  tierBtnActive: { backgroundColor: "#1e3a8a", borderColor: "#2563eb" },
-  tierText: { color: "#94a3b8", fontSize: 12, fontWeight: "700" },
+  tierBtnActive: { backgroundColor: "#0f172a", borderColor: "#0f172a" },
+  tierText: { color: "#64748b", fontSize: 12, fontWeight: "700" },
   tierTextActive: { color: "#ffffff" },
   submitBtn: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#0f172a",
     borderRadius: 14,
     paddingVertical: 14,
     alignItems: "center",
@@ -1866,41 +1870,41 @@ const modalStyles = StyleSheet.create({
   },
   submitBtnText: { color: "#ffffff", fontSize: 14, fontWeight: "800" },
   autoLinkBanner: {
-    backgroundColor: "rgba(59, 130, 246, 0.1)",
+    backgroundColor: "#eff6ff",
     borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.3)",
+    borderColor: "#bfdbfe",
     padding: 12,
     borderRadius: 12,
     marginBottom: 10,
   },
-  autoLinkTitle: { fontSize: 12, fontWeight: "800", color: "#60a5fa" },
-  autoLinkDesc: { fontSize: 11, color: "#cbd5e1", marginTop: 2 },
+  autoLinkTitle: { fontSize: 12, fontWeight: "800", color: "#1d4ed8" },
+  autoLinkDesc: { fontSize: 11, color: "#3b82f6", marginTop: 2 },
   uploadBtn: {
-    backgroundColor: "#020617",
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#cbd5e1",
     borderRadius: 12,
     paddingVertical: 12,
     alignItems: "center",
   },
-  uploadBtnText: { color: "#60a5fa", fontSize: 13, fontWeight: "700" },
+  uploadBtnText: { color: "#0284c7", fontSize: 13, fontWeight: "700" },
   uploadPreviewBox: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    backgroundColor: "#020617",
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#e2e8f0",
     borderRadius: 12,
     padding: 8,
   },
   uploadThumb: { width: 40, height: 40, borderRadius: 10 },
-  uploadAttachedText: { color: "#34d399", fontSize: 12, fontWeight: "700" },
-  viewfinder: { height: 180, backgroundColor: "#020617", borderRadius: 16, borderWidth: 1, borderColor: "#334155", alignItems: "center", justifyContent: "center", marginBottom: 14 },
-  toastBox: { backgroundColor: "rgba(16, 185, 129, 0.15)", padding: 10, borderRadius: 10, marginBottom: 10 },
-  toastText: { color: "#34d399", fontSize: 13, fontWeight: "700", textAlign: "center" },
-  gateSimBtn: { flex: 1, backgroundColor: "#1e293b", paddingVertical: 10, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: "#334155" },
-  gateSimText: { color: "#93c5fd", fontSize: 13, fontWeight: "800" },
+  uploadAttachedText: { color: "#059669", fontSize: 12, fontWeight: "700" },
+  viewfinder: { height: 180, backgroundColor: "#0f172a", borderRadius: 16, alignItems: "center", justifyContent: "center", marginBottom: 14 },
+  toastBox: { backgroundColor: "#ecfdf5", padding: 10, borderRadius: 10, marginBottom: 10 },
+  toastText: { color: "#059669", fontSize: 13, fontWeight: "700", textAlign: "center" },
+  gateSimBtn: { flex: 1, backgroundColor: "#f1f5f9", paddingVertical: 10, borderRadius: 10, alignItems: "center", borderWidth: 1, borderColor: "#e2e8f0" },
+  gateSimText: { color: "#0f172a", fontSize: 13, fontWeight: "800" },
   whiteCard: {
     backgroundColor: "#ffffff",
     borderRadius: 28,
@@ -1908,7 +1912,7 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.15,
     shadowRadius: 16,
     elevation: 10,
   },
@@ -1931,7 +1935,7 @@ const modalStyles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
-  qrCodeBigMono: { fontSize: 18, fontWeight: "900", color: "#1e3a8a", marginTop: 12, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace", letterSpacing: 0.5 },
+  qrCodeBigMono: { fontSize: 18, fontWeight: "900", color: "#0f172a", marginTop: 12, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace", letterSpacing: 0.5 },
   metaContainer: { width: "100%", backgroundColor: "#f8fafc", padding: 12, borderRadius: 14, borderWidth: 1, borderColor: "#e2e8f0", marginBottom: 14 },
   metaLineRow: { fontSize: 13, color: "#334155", marginBottom: 3 },
   metaLineLabel: { fontWeight: "700", color: "#64748b" },
@@ -1951,5 +1955,5 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
   },
-  waTextBtnText: { color: "#e2e8f0", fontSize: 13, fontWeight: "700" },
+  waTextBtnText: { color: "#ffffff", fontSize: 13, fontWeight: "700" },
 });
