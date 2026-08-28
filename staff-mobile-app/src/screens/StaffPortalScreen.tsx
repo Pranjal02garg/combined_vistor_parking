@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,8 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import * as ImagePicker from "expo-image-picker";
+import * as Sharing from "expo-sharing";
+import * as FileSystem from "expo-file-system";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 
@@ -122,24 +124,6 @@ export default function StaffPortalScreen() {
     } finally {
       setTriggeringBarrier(false);
     }
-  };
-
-  const handleSharePass = async (token: string, name: string, purpose?: string) => {
-    const passUrl = `https://campus.thapar.edu/pass/${token}`;
-    const msg = `🏛️ Thapar University Gate Pass\nGuest: ${name}\nToken: ${token}\nPurpose: ${purpose || "Campus Visit"}\nDigital Pass: ${passUrl}`;
-    try {
-      await Share.share({ message: msg, url: passUrl, title: "Gate Pass" });
-    } catch {}
-  };
-
-  const handleWhatsApp = (token: string, name: string, phone?: string, purpose?: string) => {
-    const passUrl = `https://campus.thapar.edu/pass/${token}`;
-    const msg = `🏛️ Thapar University Gate Pass\nGuest: ${name}\nToken: ${token}\nPurpose: ${purpose || "Campus Visit"}\nDigital Pass: ${passUrl}`;
-    const cleanPhone = phone?.replace(/[^0-9]/g, "") || "";
-    const waUrl = cleanPhone.length >= 10
-      ? `https://wa.me/91${cleanPhone.slice(-10)}?text=${encodeURIComponent(msg)}`
-      : `https://wa.me/?text=${encodeURIComponent(msg)}`;
-    Linking.openURL(waUrl);
   };
 
   return (
@@ -740,17 +724,15 @@ export default function StaffPortalScreen() {
           visible={true}
           title="Vehicle Security Badge"
           sub="THAPAR UNIVERSITY VEHICLE BADGE"
+          name={user?.name || "Faculty Member"}
           token={selectedVehicleQR.plateNumber}
           qrValue={`https://campus.thapar.edu/vehicle/${selectedVehicleQR.plateNumber}`}
-          icon="🚗"
           meta={[
             { label: "Model", value: selectedVehicleQR.modelName || selectedVehicleQR.vehicleType },
             { label: "Tier", value: `${selectedVehicleQR.stickerColor.toUpperCase()} PERMIT` },
             { label: "Faculty", value: user?.name || "Faculty Member" },
           ]}
           onClose={() => setSelectedVehicleQR(null)}
-          onWhatsApp={() => handleWhatsApp(selectedVehicleQR.plateNumber, selectedVehicleQR.plateNumber)}
-          onShare={() => handleSharePass(selectedVehicleQR.plateNumber, selectedVehicleQR.plateNumber)}
         />
       )}
 
@@ -760,30 +742,16 @@ export default function StaffPortalScreen() {
           visible={true}
           title="Digital Guest Pass"
           sub="THAPAR GATE CLEARANCE"
+          name={selectedPassQR.guestName}
           token={selectedPassQR.token}
+          phone={selectedPassQR.guestPhone}
           qrValue={`https://campus.thapar.edu/pass/${selectedPassQR.token}`}
-          icon="🎟️"
           meta={[
             { label: "Guest", value: selectedPassQR.guestName },
             { label: "Purpose", value: selectedPassQR.purpose || "Campus Visit" },
             { label: "Phone", value: selectedPassQR.guestPhone || "N/A" },
           ]}
           onClose={() => setSelectedPassQR(null)}
-          onWhatsApp={() =>
-            handleWhatsApp(
-              selectedPassQR.token,
-              selectedPassQR.guestName,
-              selectedPassQR.guestPhone,
-              selectedPassQR.purpose
-            )
-          }
-          onShare={() =>
-            handleSharePass(
-              selectedPassQR.token,
-              selectedPassQR.guestName,
-              selectedPassQR.purpose
-            )
-          }
         />
       )}
 
@@ -793,30 +761,16 @@ export default function StaffPortalScreen() {
           visible={true}
           title="Master Security Pass"
           sub="PERMANENT DOMESTIC STAFF CLEARANCE"
+          name={selectedHelpQR.name}
           token={selectedHelpQR.token}
+          phone={selectedHelpQR.phone}
           qrValue={`https://campus.thapar.edu/pass/${selectedHelpQR.token}`}
-          icon="🧹"
           meta={[
             { label: "Name", value: selectedHelpQR.name },
             { label: "Service", value: selectedHelpQR.serviceType },
             { label: "Quarter", value: selectedHelpQR.quarterNumber },
           ]}
           onClose={() => setSelectedHelpQR(null)}
-          onWhatsApp={() =>
-            handleWhatsApp(
-              selectedHelpQR.token,
-              selectedHelpQR.name,
-              selectedHelpQR.phone,
-              selectedHelpQR.serviceType
-            )
-          }
-          onShare={() =>
-            handleSharePass(
-              selectedHelpQR.token,
-              selectedHelpQR.name,
-              selectedHelpQR.serviceType
-            )
-          }
         />
       )}
     </SafeAreaView>
@@ -824,7 +778,7 @@ export default function StaffPortalScreen() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sub-Modals with Document Uploads & Custom Dropdowns
+// Sub-Modals
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AddVehicleModal({
@@ -1420,26 +1374,84 @@ function WhiteQRModal({
   visible,
   title,
   sub,
+  name,
   token,
+  phone,
   qrValue,
-  icon,
   meta,
   onClose,
-  onWhatsApp,
-  onShare,
 }: {
   visible: boolean;
   title: string;
   sub: string;
+  name: string;
   token: string;
+  phone?: string;
   qrValue?: string;
-  icon: string;
   meta: { label: string; value: string }[];
   onClose: () => void;
-  onWhatsApp: () => void;
-  onShare: () => void;
 }) {
   const finalQRData = qrValue || `https://campus.thapar.edu/pass/${token}`;
+  const [sharingImg, setSharingImg] = useState(false);
+  const qrSvgRef = useRef<any>(null);
+
+  const handleWhatsApp = async () => {
+    const msg = `🏛️ *THAPAR UNIVERSITY GATE PASS*\n\n📋 *Pass Type:* ${title}\n👤 *Issued For:* ${name}\n🔑 *Token Code:* ${token}\n\n🔗 *Digital QR Pass:* ${finalQRData}\n\n_Show this QR at Campus Gate 1–4 for 1-scan barrier entry._`;
+    const cleanPhone = phone?.replace(/[^0-9]/g, "") || "";
+    const waUrl = cleanPhone.length >= 10
+      ? `whatsapp://send?phone=91${cleanPhone.slice(-10)}&text=${encodeURIComponent(msg)}`
+      : `whatsapp://send?text=${encodeURIComponent(msg)}`;
+    const webFallback = cleanPhone.length >= 10
+      ? `https://api.whatsapp.com/send?phone=91${cleanPhone.slice(-10)}&text=${encodeURIComponent(msg)}`
+      : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
+
+    try {
+      const canOpen = await Linking.canOpenURL(waUrl);
+      if (canOpen) {
+        await Linking.openURL(waUrl);
+      } else {
+        await Linking.openURL(webFallback);
+      }
+    } catch {
+      await Share.share({
+        message: msg,
+        title: `Gate Pass - ${name}`,
+      });
+    }
+  };
+
+  const handleSharePass = async () => {
+    const msg = `🏛️ Thapar University Gate Pass\nPass Type: ${title}\nIssued For: ${name}\nToken: ${token}\nDigital Pass Link: ${finalQRData}`;
+    try {
+      setSharingImg(true);
+      if (qrSvgRef.current && qrSvgRef.current.toDataURL) {
+        qrSvgRef.current.toDataURL(async (data: string) => {
+          try {
+            const filename = `${FileSystem.cacheDirectory}pass_${token}.png`;
+            await FileSystem.writeAsStringAsync(filename, data, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+            if (await Sharing.isAvailableAsync()) {
+              await Sharing.shareAsync(filename, {
+                mimeType: "image/png",
+                dialogTitle: `Share Gate Pass: ${name}`,
+              });
+              setSharingImg(false);
+              return;
+            }
+          } catch {}
+          await Share.share({ message: msg, title: `Gate Pass - ${name}` });
+          setSharingImg(false);
+        });
+      } else {
+        await Share.share({ message: msg, title: `Gate Pass - ${name}` });
+        setSharingImg(false);
+      }
+    } catch {
+      await Share.share({ message: msg, title: `Gate Pass - ${name}` });
+      setSharingImg(false);
+    }
+  };
 
   return (
     <Modal visible={visible} animationType="fade" transparent>
@@ -1452,7 +1464,7 @@ function WhiteQRModal({
           <Text style={modalStyles.whiteCrestSub}>{sub}</Text>
           <Text style={modalStyles.whiteTitle}>{title}</Text>
 
-          {/* Genuine 2D Vector Scannable QR Matrix */}
+          {/* Genuine 2D Vector Scannable QR Matrix with ref */}
           <View style={modalStyles.qrBox}>
             <QRCode
               value={finalQRData}
@@ -1460,6 +1472,7 @@ function WhiteQRModal({
               color="#0f172a"
               backgroundColor="#ffffff"
               quietZone={10}
+              getRef={(c) => (qrSvgRef.current = c)}
             />
             <Text style={modalStyles.qrCodeBigMono}>{token}</Text>
           </View>
@@ -1474,12 +1487,16 @@ function WhiteQRModal({
           </View>
 
           <View style={{ flexDirection: "row", gap: 10, width: "100%" }}>
-            <TouchableOpacity style={modalStyles.waBtn} onPress={onWhatsApp}>
-              <Text style={modalStyles.waBtnText}>💬 WhatsApp Pass</Text>
+            <TouchableOpacity style={modalStyles.waBtn} onPress={handleWhatsApp} activeOpacity={0.85}>
+              <Text style={modalStyles.waBtnText}>💬 WhatsApp</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={modalStyles.shareBtn} onPress={onShare}>
-              <Text style={modalStyles.shareBtnText}>📤 Share Pass</Text>
+            <TouchableOpacity style={modalStyles.shareBtn} onPress={handleSharePass} activeOpacity={0.85}>
+              {sharingImg ? (
+                <ActivityIndicator color="#ffffff" size="small" />
+              ) : (
+                <Text style={modalStyles.shareBtnText}>📤 Share QR Image</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -1906,8 +1923,8 @@ const modalStyles = StyleSheet.create({
   metaLineRow: { fontSize: 11, color: "#334155", marginBottom: 2 },
   metaLineLabel: { fontWeight: "700", color: "#64748b" },
   metaLineVal: { fontWeight: "800", color: "#0f172a" },
-  waBtn: { flex: 1, backgroundColor: "#059669", paddingVertical: 11, borderRadius: 12, alignItems: "center" },
-  waBtnText: { color: "#ffffff", fontSize: 11, fontWeight: "800" },
-  shareBtn: { flex: 1, backgroundColor: "#0f172a", paddingVertical: 11, borderRadius: 12, alignItems: "center" },
-  shareBtnText: { color: "#ffffff", fontSize: 11, fontWeight: "800" },
+  waBtn: { flex: 1, backgroundColor: "#059669", paddingVertical: 12, borderRadius: 12, alignItems: "center" },
+  waBtnText: { color: "#ffffff", fontSize: 12, fontWeight: "800" },
+  shareBtn: { flex: 1, backgroundColor: "#0f172a", paddingVertical: 12, borderRadius: 12, alignItems: "center" },
+  shareBtnText: { color: "#ffffff", fontSize: 12, fontWeight: "800" },
 });
