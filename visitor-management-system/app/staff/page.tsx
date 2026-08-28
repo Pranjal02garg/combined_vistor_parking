@@ -35,6 +35,7 @@ import {
   AlertCircle,
   Briefcase,
   Share2,
+  CheckCircle,
 } from "lucide-react";
 import StaffParkingSection from "@/components/StaffParkingSection";
 import {
@@ -75,9 +76,9 @@ export default function StaffPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-3">
-        <Loader2 className="animate-spin text-slate-400" size={32} />
-        <p className="text-xs text-slate-400 font-medium tracking-wide">
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="animate-spin text-blue-500" size={40} />
+        <p className="text-sm text-slate-400 font-bold tracking-wide">
           Authenticating Faculty &amp; Resident Console...
         </p>
       </div>
@@ -159,52 +160,54 @@ function StaffConsole({ userName }: { userName: string }) {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 antialiased">
-      {/* Top Professional Header */}
-      <header className="sticky top-0 z-40 border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
+      {/* Top Professional Large Header */}
+      <header className="sticky top-0 z-40 border-b border-slate-800 bg-slate-950/90 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+          <div className="flex h-20 items-center justify-between gap-4">
+            <div className="flex items-center gap-3.5">
               <Link
                 href="/"
-                className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white transition"
+                className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white transition shadow-sm"
                 title="Back to Campus Portal"
               >
-                <ArrowLeft size={16} />
+                <ArrowLeft size={20} />
               </Link>
               <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-base font-bold text-white tracking-tight">Thapar Staff Hub</h1>
-                  <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300 border border-slate-700 font-mono">
+                <div className="flex items-center gap-2.5">
+                  <h1 className="text-xl sm:text-2xl font-extrabold text-white tracking-tight">
+                    Thapar Staff Hub
+                  </h1>
+                  <span className="rounded-xl bg-blue-600/20 px-2.5 py-0.5 text-xs font-bold text-blue-400 border border-blue-500/30 font-mono">
                     Faculty Console
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 hidden sm:block">
+                <p className="text-xs sm:text-sm text-slate-400 font-medium hidden sm:block">
                   Campus Parking, Visitor Passes &amp; Domestic Staff Clearance
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <div className="hidden md:flex items-center gap-2 text-xs text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl">
-                <User size={13} className="text-slate-500" />
-                <span className="font-semibold text-white">{userName}</span>
+              <div className="hidden md:flex items-center gap-2 text-sm text-slate-300 bg-slate-900 border border-slate-800 px-4 py-2 rounded-2xl shadow-sm">
+                <User size={16} className="text-blue-400" />
+                <span className="font-bold text-white">{userName}</span>
               </div>
 
               <button
                 onClick={() => signOut({ callbackUrl: "/staff" })}
-                className="flex items-center gap-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:text-white transition"
+                className="flex items-center gap-2 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-300 hover:text-white transition shadow-sm"
               >
-                <LogOut size={13} />
+                <LogOut size={16} />
                 <span>Sign Out</span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* 4-Tab Navigation Ribbon */}
-        <div className="border-t border-slate-800/80 bg-slate-950/60">
+        {/* Large 4-Tab Navigation Ribbon */}
+        <div className="border-t border-slate-800/90 bg-slate-950/70">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <nav className="flex space-x-2 overflow-x-auto py-2 no-scrollbar">
+            <nav className="flex space-x-3 overflow-x-auto py-2.5 no-scrollbar">
               {[
                 { id: "parking", label: "Parking & Access", icon: Car, count: carsCount },
                 { id: "guests", label: "Visitor Passes", icon: QrCode, count: passes.length },
@@ -217,18 +220,18 @@ function StaffConsole({ userName }: { userName: string }) {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as StaffTab)}
-                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-3.5 py-2 text-xs font-semibold transition ${
+                    className={`flex items-center gap-2.5 whitespace-nowrap rounded-2xl px-4 sm:px-5 py-2.5 text-xs sm:text-sm font-bold transition shadow-sm ${
                       active
-                        ? "bg-slate-800 text-white shadow-sm border border-slate-700"
-                        : "text-slate-400 hover:bg-slate-900 hover:text-slate-200"
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-600/25 border border-blue-400/30"
+                        : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200 border border-slate-800/90"
                     }`}
                   >
-                    <Icon size={14} className={active ? "text-blue-400" : "text-slate-500"} />
+                    <Icon size={16} className={active ? "text-white" : "text-slate-500"} />
                     <span>{tab.label}</span>
                     {tab.count > 0 && (
                       <span
-                        className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold font-mono ${
-                          active ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-400"
+                        className={`rounded-full px-2 py-0.5 text-xs font-black font-mono ${
+                          active ? "bg-white text-blue-900" : "bg-slate-800 text-slate-300"
                         }`}
                       >
                         {tab.count}
@@ -242,45 +245,47 @@ function StaffConsole({ userName }: { userName: string }) {
         </div>
       </header>
 
-      {/* Main Content Area */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+      {/* Main Content Area (Spacious & Roomy) */}
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         {/* TAB 1: PARKING & ACCESS */}
         {activeTab === "parking" && <StaffParkingSection userName={userName} />}
 
         {/* TAB 2: VISITOR & GUEST PASSES */}
         {activeTab === "guests" && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">Visitor &amp; Guest Passes</h2>
-                <p className="text-xs text-slate-400">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  Visitor &amp; Guest Passes
+                </h2>
+                <p className="text-sm text-slate-400 mt-1">
                   Pre-cleared digital gate passes for seamless 1-scan QR entry at Gates 1–4
                 </p>
               </div>
 
               <button
                 onClick={() => setShowCreatePassModal(true)}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition active:scale-95"
               >
-                <Plus size={14} />
-                <span>Issue Guest Pass</span>
+                <Plus size={18} />
+                <span>+ Issue Guest Pass</span>
               </button>
             </div>
 
             {/* Filter & Search Bar */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="relative flex-1">
-                <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+                <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
                   type="text"
                   placeholder="Search guest name, phone, or token code..."
                   value={guestSearch}
                   onChange={(e) => setGuestSearch(e.target.value)}
-                  className="w-full rounded-xl border border-slate-800 bg-slate-900 pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
+                  className="w-full rounded-2xl border border-slate-800 bg-slate-900 pl-11 pr-4 py-3.5 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
                 />
               </div>
 
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
                 {[
                   { id: "ALL", label: "All Passes" },
                   { id: "CHECKED_IN", label: "On Campus" },
@@ -290,10 +295,10 @@ function StaffConsole({ userName }: { userName: string }) {
                   <button
                     key={f.id}
                     onClick={() => setGuestStatusFilter(f.id)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                    className={`px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold whitespace-nowrap transition ${
                       guestStatusFilter === f.id
-                        ? "bg-slate-800 text-white border border-slate-700"
-                        : "bg-slate-900/60 text-slate-400 hover:text-slate-200 border border-slate-800/80"
+                        ? "bg-slate-800 text-white border border-slate-700 shadow-sm"
+                        : "bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800/80"
                     }`}
                   >
                     {f.label}
@@ -304,21 +309,21 @@ function StaffConsole({ userName }: { userName: string }) {
 
             {/* Passes Matrix */}
             {filteredPasses.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 p-10 text-center">
-                <QrCode className="mx-auto h-8 w-8 text-slate-600" />
-                <h3 className="mt-2 text-sm font-bold text-white">No Guest Passes Found</h3>
-                <p className="mt-1 text-xs text-slate-400 max-w-sm mx-auto">
+              <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/40 p-12 text-center space-y-3">
+                <QrCode className="mx-auto h-12 w-12 text-slate-600" />
+                <h3 className="text-lg font-bold text-white">No Guest Passes Found</h3>
+                <p className="text-sm text-slate-400 max-w-md mx-auto">
                   Create pre-authorized digital passes for family, academic visitors, or vendors.
                 </p>
                 <button
                   onClick={() => setShowCreatePassModal(true)}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 px-4 py-2 text-xs font-bold transition shadow-sm"
+                  className="mt-2 inline-flex items-center gap-2 rounded-2xl bg-slate-100 hover:bg-white text-slate-950 px-5 py-3 text-sm font-bold transition shadow-sm"
                 >
-                  <Plus size={14} /> Issue First Pass
+                  <Plus size={16} /> Issue First Pass
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredPasses.map((p) => {
                   const isCheckedIn = p.status === "CHECKED_IN";
                   const isApproved = p.status === "APPROVED" || p.status === "VALID";
@@ -326,15 +331,15 @@ function StaffConsole({ userName }: { userName: string }) {
                   return (
                     <div
                       key={p.id || p.token}
-                      className="rounded-2xl border border-slate-800/90 bg-slate-900/80 p-4 shadow-sm transition hover:border-slate-700 flex flex-col justify-between"
+                      className="rounded-3xl border border-slate-800 bg-slate-900/90 p-6 shadow-md transition hover:border-slate-700 flex flex-col justify-between"
                     >
-                      <div>
+                      <div className="space-y-3">
                         <div className="flex items-start justify-between gap-2">
-                          <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300 uppercase">
+                          <span className="rounded-xl bg-slate-800 px-3 py-1 text-xs font-bold text-slate-300 uppercase">
                             {p.purpose || "Official Guest"}
                           </span>
                           <span
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase font-mono border ${
+                            className={`rounded-full px-3 py-1 text-xs font-extrabold uppercase font-mono border ${
                               isCheckedIn
                                 ? "bg-emerald-950/60 text-emerald-400 border-emerald-800/60"
                                 : isApproved
@@ -346,31 +351,34 @@ function StaffConsole({ userName }: { userName: string }) {
                           </span>
                         </div>
 
-                        <h4 className="mt-2.5 text-base font-bold text-white tracking-tight">{p.guestName}</h4>
-
-                        {p.guestPhone && (
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-400 font-mono">
-                            <Phone size={12} className="text-slate-500" />
-                            <span>+91 {p.guestPhone}</span>
-                          </div>
-                        )}
+                        <div>
+                          <h4 className="text-lg sm:text-xl font-bold text-white tracking-tight">
+                            {p.guestName}
+                          </h4>
+                          {p.guestPhone && (
+                            <div className="mt-1 flex items-center gap-1.5 text-xs sm:text-sm text-slate-400 font-mono">
+                              <Phone size={14} className="text-slate-500" />
+                              <span>+91 {p.guestPhone}</span>
+                            </div>
+                          )}
+                        </div>
 
                         {p.vehicleNumber && (
-                          <div className="mt-2.5 inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-2.5 py-1 text-xs font-mono font-bold text-slate-300 border border-slate-800">
-                            <Car size={13} className="text-slate-400" />
+                          <div className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-3 py-1.5 text-xs sm:text-sm font-mono font-bold text-slate-200 border border-slate-800">
+                            <Car size={15} className="text-blue-400" />
                             <span>{p.vehicleNumber}</span>
                           </div>
                         )}
                       </div>
 
-                      <div className="mt-4 border-t border-slate-800/80 pt-3 flex items-center justify-between gap-2">
-                        <span className="font-mono text-xs text-slate-500 font-semibold">{p.token}</span>
+                      <div className="mt-6 border-t border-slate-800/80 pt-4 flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs text-slate-500 font-bold">{p.token}</span>
 
                         <button
                           onClick={() => setSelectedPassForQR(p)}
-                          className="flex items-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200 border border-slate-700 transition"
+                          className="flex items-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-200 border border-slate-700 transition"
                         >
-                          <QrCode size={13} className="text-slate-400" />
+                          <QrCode size={16} className="text-blue-400" />
                           <span>View QR Pass</span>
                         </button>
                       </div>
@@ -384,65 +392,67 @@ function StaffConsole({ userName }: { userName: string }) {
 
         {/* TAB 3: DOMESTIC STAFF & MAIDS */}
         {activeTab === "house_helps" && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h2 className="text-lg font-bold text-white tracking-tight">Domestic Staff &amp; Maids</h2>
-                <p className="text-xs text-slate-400">
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                  Domestic Staff &amp; Maids
+                </h2>
+                <p className="text-sm text-slate-400 mt-1">
                   Permanent QR gate passes for maids, cooks, drivers, cleaners, and caregivers
                 </p>
               </div>
 
               <button
                 onClick={() => setShowAddHelpModal(true)}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-4 py-2 text-xs font-bold text-white shadow-sm transition active:scale-95"
+                className="flex items-center justify-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition active:scale-95"
               >
-                <Plus size={14} />
-                <span>Register Helper</span>
+                <Plus size={18} />
+                <span>+ Register Helper</span>
               </button>
             </div>
 
             {/* 10-Digit Mobile Auto-Linking Card */}
-            <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 text-xs text-slate-300 flex items-start gap-3">
-              <ShieldCheck size={18} className="text-blue-400 shrink-0 mt-0.5" />
+            <div className="rounded-3xl border border-slate-800 bg-slate-900/60 p-6 text-sm text-slate-300 flex items-start gap-4 shadow-sm">
+              <ShieldCheck size={24} className="text-blue-400 shrink-0 mt-0.5" />
               <div>
                 <span className="font-bold text-white">10-Digit Mobile Auto-Linking: </span>
-                If your helper already works for another faculty residence, entering their 10-digit mobile number instantly links their existing verified campus clearance without redundant background re-verification.
+                If your helper already works for another faculty residence on campus, entering their 10-digit mobile number instantly links their existing verified campus clearance without redundant background re-verification.
               </div>
             </div>
 
             {/* Helpers List */}
             {filteredHelps.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-800 bg-slate-900/40 p-10 text-center">
-                <UserCheck className="mx-auto h-8 w-8 text-slate-600" />
-                <h3 className="mt-2 text-sm font-bold text-white">No Domestic Staff Registered</h3>
-                <p className="mt-1 text-xs text-slate-400 max-w-sm mx-auto">
+              <div className="rounded-3xl border border-dashed border-slate-800 bg-slate-900/40 p-12 text-center space-y-3">
+                <UserCheck className="mx-auto h-12 w-12 text-slate-600" />
+                <h3 className="text-lg font-bold text-white">No Domestic Staff Registered</h3>
+                <p className="text-sm text-slate-400 max-w-md mx-auto">
                   Add domestic staff to grant them permanent QR gate barrier entry into your faculty quarter.
                 </p>
                 <button
                   onClick={() => setShowAddHelpModal(true)}
-                  className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-slate-100 hover:bg-white text-slate-900 px-4 py-2 text-xs font-bold transition shadow-sm"
+                  className="mt-2 inline-flex items-center gap-2 rounded-2xl bg-slate-100 hover:bg-white text-slate-950 px-5 py-3 text-sm font-bold transition shadow-sm"
                 >
-                  <Plus size={14} /> Register Helper
+                  <Plus size={16} /> Register Helper
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                 {filteredHelps.map((h) => {
                   const isActive = h.isActive !== false;
 
                   return (
                     <div
                       key={h.linkId}
-                      className="rounded-2xl border border-slate-800/90 bg-slate-900/80 p-4 shadow-sm transition hover:border-slate-700 flex flex-col justify-between"
+                      className="rounded-3xl border border-slate-800 bg-slate-900/90 p-6 shadow-md transition hover:border-slate-700 flex flex-col justify-between"
                     >
-                      <div>
+                      <div className="space-y-3">
                         <div className="flex items-start justify-between gap-2">
-                          <span className="rounded bg-slate-800 px-2 py-0.5 text-[10px] font-semibold text-slate-300 uppercase">
+                          <span className="rounded-xl bg-slate-800 px-3 py-1 text-xs font-bold text-slate-300 uppercase">
                             {h.helper.serviceType}
                           </span>
                           <span
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase font-mono border ${
+                            className={`rounded-full px-3 py-1 text-xs font-extrabold uppercase font-mono border ${
                               isActive
                                 ? "bg-emerald-950/60 text-emerald-400 border-emerald-800/60"
                                 : "bg-rose-950/60 text-rose-400 border-rose-800/60"
@@ -452,29 +462,33 @@ function StaffConsole({ userName }: { userName: string }) {
                           </span>
                         </div>
 
-                        <div className="mt-3 flex items-center gap-3">
+                        <div className="flex items-center gap-3.5 pt-1">
                           {h.helper.photoUrl ? (
                             <img
                               src={h.helper.photoUrl}
                               alt={h.helper.name}
-                              className="h-11 w-11 rounded-full object-cover border border-slate-700"
+                              className="h-14 w-14 rounded-2xl object-cover border border-slate-700 shadow-sm"
                             />
                           ) : (
-                            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-slate-800 border border-slate-700 text-slate-300 font-bold text-sm">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-800 border border-slate-700 text-slate-200 font-extrabold text-lg">
                               {h.helper.name.slice(0, 2).toUpperCase()}
                             </div>
                           )}
 
                           <div>
-                            <h4 className="text-base font-bold text-white tracking-tight">{h.helper.name}</h4>
-                            <div className="text-xs text-slate-400 font-mono">+91 {h.helper.phone}</div>
+                            <h4 className="text-lg font-bold text-white tracking-tight">
+                              {h.helper.name}
+                            </h4>
+                            <div className="text-xs sm:text-sm text-slate-400 font-mono">
+                              +91 {h.helper.phone}
+                            </div>
                           </div>
                         </div>
 
-                        <div className="mt-3.5 space-y-1 rounded-xl bg-slate-950 p-2.5 text-xs text-slate-400 border border-slate-800/80">
+                        <div className="space-y-1.5 rounded-2xl bg-slate-950 p-3.5 text-xs sm:text-sm text-slate-400 border border-slate-800/80 font-medium">
                           <div className="flex justify-between">
                             <span className="text-slate-500">Quarter:</span>
-                            <span className="font-semibold text-slate-200">{h.quarterNumber}</span>
+                            <span className="font-bold text-slate-200">{h.quarterNumber}</span>
                           </div>
                           {h.workShift && (
                             <div className="flex justify-between">
@@ -485,12 +499,12 @@ function StaffConsole({ userName }: { userName: string }) {
                         </div>
                       </div>
 
-                      <div className="mt-4 border-t border-slate-800/80 pt-3 flex items-center justify-between gap-2">
+                      <div className="mt-6 border-t border-slate-800/80 pt-4 flex items-center justify-between gap-2">
                         <button
                           onClick={() => setSelectedHelpForQR(h)}
-                          className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 px-3 py-1.5 text-xs font-semibold text-slate-200 border border-slate-700 transition"
+                          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2.5 text-xs sm:text-sm font-bold text-slate-200 border border-slate-700 transition"
                         >
-                          <QrCode size={13} className="text-slate-400" />
+                          <QrCode size={16} className="text-blue-400" />
                           <span>Master Pass</span>
                         </button>
 
@@ -503,7 +517,7 @@ function StaffConsole({ userName }: { userName: string }) {
                               alert(e.message);
                             }
                           }}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                          className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border transition ${
                             isActive
                               ? "bg-slate-950 text-slate-400 border-slate-800 hover:text-slate-200"
                               : "bg-emerald-950/60 text-emerald-300 border-emerald-800/60"
@@ -519,10 +533,10 @@ function StaffConsole({ userName }: { userName: string }) {
                               queryClient.invalidateQueries({ queryKey: ["my-house-helps"] });
                             }
                           }}
-                          className="p-1.5 rounded-lg bg-slate-950 hover:bg-rose-950/60 text-slate-500 hover:text-rose-400 border border-slate-800 transition"
+                          className="p-2.5 rounded-xl bg-slate-950 hover:bg-rose-950/60 text-slate-500 hover:text-rose-400 border border-slate-800 transition"
                           title="Unlink Staff"
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </div>
@@ -535,33 +549,36 @@ function StaffConsole({ userName }: { userName: string }) {
 
         {/* TAB 4: SECURITY NOTICES */}
         {activeTab === "notices" && (
-          <div className="space-y-6">
+          <div className="space-y-8">
             <div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Campus Security Notices</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+                Campus Security Notices
+              </h2>
+              <p className="text-sm text-slate-400 mt-1">
                 Official security updates, safety advisories, and residence notifications
               </p>
             </div>
 
             {notices.length === 0 ? (
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-8 text-center text-xs text-slate-400">
-                <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500/80 mb-2" />
-                No active security alerts or pending advisories for faculty residence blocks.
+              <div className="rounded-3xl border border-slate-800 bg-slate-900/40 p-12 text-center text-sm text-slate-400 space-y-2">
+                <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-500/80 mb-2" />
+                <div className="text-base font-bold text-white">All Clear</div>
+                <p>No active security alerts or pending advisories for faculty residence blocks.</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {notices.map((n) => {
                   const isHigh = n.severity === "HIGH" || n.severity === "CRITICAL";
 
                   return (
                     <div
                       key={n.id}
-                      className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-sm space-y-2"
+                      className="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8 shadow-md space-y-3"
                     >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="text-sm font-bold text-white">{n.title}</h4>
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <h4 className="text-base sm:text-lg font-bold text-white">{n.title}</h4>
                         <span
-                          className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase font-mono border ${
+                          className={`rounded-xl px-3 py-1 text-xs font-bold uppercase font-mono border ${
                             isHigh
                               ? "bg-rose-950/60 text-rose-400 border-rose-800/60"
                               : "bg-slate-800 text-slate-300 border-slate-700"
@@ -571,15 +588,15 @@ function StaffConsole({ userName }: { userName: string }) {
                         </span>
                       </div>
 
-                      <div className="text-xs text-slate-400 flex items-center gap-1.5 font-mono">
-                        <Clock size={12} className="text-slate-500" />
+                      <div className="text-xs sm:text-sm text-slate-400 flex items-center gap-2 font-mono">
+                        <Clock size={14} className="text-slate-500" />
                         <span>{new Date(n.createdAt).toLocaleString()}</span>
                       </div>
 
-                      <p className="text-xs text-slate-300 leading-relaxed">{n.description}</p>
+                      <p className="text-sm text-slate-300 leading-relaxed">{n.description}</p>
 
                       {n.resolution && (
-                        <div className="mt-2 rounded-xl bg-slate-950 border border-slate-800/80 p-3 text-xs text-emerald-400">
+                        <div className="mt-3 rounded-2xl bg-slate-950 border border-slate-800 p-4 text-xs sm:text-sm text-emerald-400">
                           <span className="font-bold">Resolution Advisory: </span>
                           <span className="text-slate-300">{n.resolution}</span>
                         </div>
@@ -593,7 +610,7 @@ function StaffConsole({ userName }: { userName: string }) {
         )}
       </main>
 
-      {/* 1. Create Guest Pass Modal */}
+      {/* 1. Create Guest Pass Modal (Large & Roomy) */}
       {showCreatePassModal && (
         <CreateGuestPassModal
           onClose={() => setShowCreatePassModal(false)}
@@ -605,7 +622,7 @@ function StaffConsole({ userName }: { userName: string }) {
         />
       )}
 
-      {/* 2. Add Domestic Staff Modal */}
+      {/* 2. Add Domestic Staff Modal (Large & Roomy) */}
       {showAddHelpModal && (
         <AddDomesticStaffModal
           onClose={() => setShowAddHelpModal(false)}
@@ -617,7 +634,7 @@ function StaffConsole({ userName }: { userName: string }) {
         />
       )}
 
-      {/* 3. Universal Vector QR Modal for Guest Passes */}
+      {/* 3. Universal Vector QR Modal for Guest Passes (Large & High-Contrast) */}
       {selectedPassForQR && (
         <UniversalQRModal
           title="Official Visitor Gate Pass"
@@ -635,7 +652,7 @@ function StaffConsole({ userName }: { userName: string }) {
         />
       )}
 
-      {/* 4. Universal Vector QR Modal for Domestic Staff */}
+      {/* 4. Universal Vector QR Modal for Domestic Staff (Large & High-Contrast) */}
       {selectedHelpForQR && (
         <UniversalQRModal
           title="Domestic Staff Master Pass"
@@ -657,7 +674,7 @@ function StaffConsole({ userName }: { userName: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sub-Modals
+// Sub-Modals (Large, Roomy, High-End UX)
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CreateGuestPassModal({
@@ -702,33 +719,33 @@ function CreateGuestPassModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="text-base font-bold text-white tracking-tight">Issue Visitor Gate Pass</h3>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-            <X size={16} />
+      <div className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8 shadow-2xl space-y-5">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">Issue Visitor Gate Pass</h3>
+          <button onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
+            <X size={18} />
           </button>
         </div>
 
         {error && (
-          <div className="rounded-xl bg-rose-950/60 border border-rose-800/60 p-3 text-xs text-rose-300">
+          <div className="rounded-2xl bg-rose-950/60 border border-rose-800/60 p-4 text-xs sm:text-sm text-rose-300">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-400">Purpose Category</label>
-            <div className="grid grid-cols-2 gap-2 mt-1">
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Purpose Category</label>
+            <div className="grid grid-cols-2 gap-2.5 mt-1.5">
               <button
                 type="button"
                 onClick={() => {
                   setVisitType("OFFICIAL");
                   setPurpose("Official Academic Meeting");
                 }}
-                className={`py-2 px-3 rounded-xl text-xs font-semibold transition ${
+                className={`py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition ${
                   visitType === "OFFICIAL"
-                    ? "bg-blue-600 text-white shadow-sm"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
                     : "bg-slate-950 text-slate-400 border border-slate-800 hover:border-slate-700"
                 }`}
               >
@@ -740,9 +757,9 @@ function CreateGuestPassModal({
                   setVisitType("PERSONAL");
                   setPurpose("Personal Guest / Relative Visit");
                 }}
-                className={`py-2 px-3 rounded-xl text-xs font-semibold transition ${
+                className={`py-3 px-4 rounded-2xl text-xs sm:text-sm font-bold transition ${
                   visitType === "PERSONAL"
-                    ? "bg-blue-600 text-white shadow-sm"
+                    ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
                     : "bg-slate-950 text-slate-400 border border-slate-800 hover:border-slate-700"
                 }`}
               >
@@ -752,7 +769,7 @@ function CreateGuestPassModal({
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400">
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">
               Guest Full Name <span className="text-rose-400">*</span>
             </label>
             <input
@@ -760,57 +777,57 @@ function CreateGuestPassModal({
               placeholder="e.g. Dr. Arvind Subramanian"
               value={guestName}
               onChange={(e) => setGuestName(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+              className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-base text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400">Mobile Phone Number (Optional)</label>
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Mobile Phone Number (Optional)</label>
             <input
               type="tel"
               placeholder="e.g. 9876543210"
               value={guestPhone}
               onChange={(e) => setGuestPhone(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 font-mono focus:border-blue-500 focus:outline-none"
+              className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-base text-white placeholder-slate-600 font-mono focus:border-blue-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400">Purpose Description</label>
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Purpose Description</label>
             <input
               type="text"
-              placeholder="e.g. PhD Defense External Examiner"
+              placeholder="e.g. External Examiner Meeting"
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+              className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400">Vehicle License Plate (Optional)</label>
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Vehicle License Plate (Optional)</label>
             <input
               type="text"
               placeholder="e.g. PB11BH8820"
               value={vehicleNumber}
               onChange={(e) => setVehicleNumber(e.target.value.toUpperCase())}
-              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 font-mono uppercase focus:border-blue-500 focus:outline-none"
+              className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white placeholder-slate-600 font-mono uppercase focus:border-blue-500 focus:outline-none"
             />
           </div>
 
-          <div className="mt-5 flex items-center justify-end gap-2.5 border-t border-slate-800 pt-4">
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-800 pt-5">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+              className="rounded-2xl px-5 py-3 text-sm font-bold text-slate-400 hover:text-white"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !guestName.trim()}
-              className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2 text-xs font-bold text-white shadow-sm transition disabled:opacity-50"
+              className="flex items-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-500 px-6 py-3 text-sm font-bold text-white shadow-md shadow-blue-600/25 transition disabled:opacity-50"
             >
-              {loading && <Loader2 size={13} className="animate-spin" />}
+              {loading && <Loader2 size={16} className="animate-spin" />}
               Issue Gate Pass
             </button>
           </div>
@@ -870,23 +887,23 @@ function AddDomesticStaffModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm overflow-y-auto">
-      <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-4 my-8">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <h3 className="text-base font-bold text-white tracking-tight">Register or Link Domestic Staff</h3>
-          <button onClick={onClose} className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white">
-            <X size={16} />
+      <div className="w-full max-w-lg rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8 shadow-2xl space-y-5 my-8">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">Register or Link Domestic Staff</h3>
+          <button onClick={onClose} className="rounded-full p-2 text-slate-400 hover:bg-slate-800 hover:text-white">
+            <X size={18} />
           </button>
         </div>
 
         {error && (
-          <div className="rounded-xl bg-rose-950/60 border border-rose-800/60 p-3 text-xs text-rose-300">
+          <div className="rounded-2xl bg-rose-950/60 border border-rose-800/60 p-4 text-xs sm:text-sm text-rose-300">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="text-xs font-semibold text-slate-400">
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">
               Helper Mobile Phone (10 Digits) <span className="text-rose-400">*</span>
             </label>
             <input
@@ -895,32 +912,32 @@ function AddDomesticStaffModal({
               maxLength={10}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 font-mono focus:border-blue-500 focus:outline-none"
+              className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-base text-white placeholder-slate-600 font-mono focus:border-blue-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400">Helper Full Name</label>
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Helper Full Name</label>
             <input
               type="text"
               placeholder="e.g. Sunita Devi"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+              className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3 text-base text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400">Service Category</label>
-            <div className="grid grid-cols-2 gap-2 mt-1">
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Service Category</label>
+            <div className="grid grid-cols-2 gap-2 mt-1.5">
               {SERVICE_CATEGORIES.map((cat) => (
                 <button
                   key={cat.id}
                   type="button"
                   onClick={() => setServiceType(cat.id)}
-                  className={`py-1.5 px-2.5 rounded-xl text-xs font-semibold text-left transition ${
+                  className={`py-2.5 px-3 rounded-2xl text-xs sm:text-sm font-bold text-left transition ${
                     serviceType === cat.id
-                      ? "bg-blue-600 text-white shadow-sm"
+                      ? "bg-blue-600 text-white shadow-md shadow-blue-600/25"
                       : "bg-slate-950 text-slate-400 border border-slate-800 hover:border-slate-700"
                   }`}
                 >
@@ -932,22 +949,22 @@ function AddDomesticStaffModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-semibold text-slate-400">Residence Quarter</label>
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Residence Quarter</label>
               <input
                 type="text"
                 value={quarterNumber}
                 onChange={(e) => setQuarterNumber(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-400">Work Shift</label>
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Work Shift</label>
               <input
                 type="text"
                 value={workShift}
                 onChange={(e) => setWorkShift(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+                className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-xs sm:text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
               />
             </div>
           </div>
@@ -955,17 +972,17 @@ function AddDomesticStaffModal({
           {/* Document & Face Uploads */}
           <div className="grid grid-cols-2 gap-3 pt-1">
             <div>
-              <label className="text-xs font-semibold text-slate-400">Govt ID Scan (Optional)</label>
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Govt ID Scan (Optional)</label>
               {idProofDocUrl ? (
-                <div className="mt-1 flex items-center justify-between p-2 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-300">
-                  <span>Attached</span>
+                <div className="mt-1.5 flex items-center justify-between p-3 rounded-2xl bg-emerald-950/40 border border-emerald-800/60 text-xs sm:text-sm text-emerald-300">
+                  <span className="font-bold">Attached</span>
                   <button type="button" onClick={() => setIdProofDocUrl(null)} className="text-slate-400 hover:text-rose-400">
-                    <X size={13} />
+                    <X size={16} />
                   </button>
                 </div>
               ) : (
-                <label className="mt-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-2.5 text-xs text-slate-400 hover:text-slate-300">
-                  <Upload size={13} />
+                <label className="mt-1.5 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-700 bg-slate-950/60 p-3.5 text-xs sm:text-sm text-slate-400 hover:text-slate-300 transition">
+                  <Upload size={16} />
                   <span>Upload Scan</span>
                   <input
                     type="file"
@@ -985,18 +1002,18 @@ function AddDomesticStaffModal({
             </div>
 
             <div>
-              <label className="text-xs font-semibold text-slate-400">Helper Photo (Optional)</label>
+              <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Helper Photo (Optional)</label>
               {photoUrl ? (
-                <div className="mt-1 flex items-center justify-between p-2 rounded-xl bg-emerald-950/40 border border-emerald-800/60 text-xs text-emerald-300">
-                  <span>Attached</span>
+                <div className="mt-1.5 flex items-center justify-between p-3 rounded-2xl bg-emerald-950/40 border border-emerald-800/60 text-xs sm:text-sm text-emerald-300">
+                  <span className="font-bold">Attached</span>
                   <button type="button" onClick={() => setPhotoUrl(null)} className="text-slate-400 hover:text-rose-400">
-                    <X size={13} />
+                    <X size={16} />
                   </button>
                 </div>
               ) : (
-                <label className="mt-1 flex cursor-pointer items-center justify-center gap-1.5 rounded-xl border border-dashed border-slate-700 bg-slate-950/60 p-2.5 text-xs text-slate-400 hover:text-slate-300">
-                  <Upload size={13} />
-                  <span>Upload Selfie</span>
+                <label className="mt-1.5 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-700 bg-slate-950/60 p-3.5 text-xs sm:text-sm text-slate-400 hover:text-slate-300 transition">
+                  <Upload size={16} />
+                  <span>Upload Photo</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -1015,20 +1032,20 @@ function AddDomesticStaffModal({
             </div>
           </div>
 
-          <div className="mt-5 flex items-center justify-end gap-2.5 border-t border-slate-800 pt-4">
+          <div className="mt-6 flex items-center justify-end gap-3 border-t border-slate-800 pt-5">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+              className="rounded-2xl px-5 py-3 text-sm font-bold text-slate-400 hover:text-white"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading || !phone.trim()}
-              className="flex items-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 px-5 py-2 text-xs font-bold text-white shadow-sm transition disabled:opacity-50"
+              className="flex items-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-500 px-6 py-3 text-sm font-bold text-white shadow-md shadow-blue-600/25 transition disabled:opacity-50"
             >
-              {loading && <Loader2 size={13} className="animate-spin" />}
+              {loading && <Loader2 size={16} className="animate-spin" />}
               Submit Staff Clearance
             </button>
           </div>
@@ -1065,7 +1082,7 @@ function UniversalQRModal({
 
   useEffect(() => {
     QRCode.toDataURL(token, {
-      width: 320,
+      width: 360,
       margin: 2,
       color: { dark: "#0f172a", light: "#ffffff" },
     })
@@ -1084,47 +1101,47 @@ function UniversalQRModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl text-slate-900 text-center relative space-y-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 backdrop-blur-md">
+      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl text-slate-900 text-center relative space-y-5">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+          className="absolute top-5 right-5 rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
         >
-          <X size={16} />
+          <X size={20} />
         </button>
 
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-widest text-slate-500 font-mono">{sub}</div>
-          <h3 className="text-lg font-black text-slate-900 mt-0.5">{title}</h3>
+          <div className="text-xs font-black uppercase tracking-widest text-slate-400 font-mono">{sub}</div>
+          <h3 className="text-2xl font-black text-slate-900 mt-1">{title}</h3>
         </div>
 
-        <div className="mx-auto flex justify-center bg-slate-50 p-4 rounded-2xl border border-slate-200">
+        <div className="mx-auto flex justify-center bg-slate-50 p-6 rounded-3xl border border-slate-200 shadow-inner">
           {qrUrl ? (
-            <img src={qrUrl} alt="Pass QR" className="h-44 w-44 rounded-lg" />
+            <img src={qrUrl} alt="Pass QR" className="h-56 w-56 rounded-2xl" />
           ) : (
-            <div className="flex h-44 w-44 items-center justify-center text-xs text-slate-400">
-              <Loader2 className="animate-spin" />
+            <div className="flex h-56 w-56 items-center justify-center text-sm text-slate-400">
+              <Loader2 className="animate-spin" size={24} />
             </div>
           )}
         </div>
 
-        <div className="font-mono text-base font-black text-blue-700 tracking-wider">{token}</div>
+        <div className="font-mono text-2xl font-black text-blue-700 tracking-wider">{token}</div>
 
-        <div className="rounded-xl bg-slate-50 p-3 text-left text-xs space-y-1.5 border border-slate-100">
+        <div className="rounded-2xl bg-slate-50 p-4 text-left text-sm space-y-2 border border-slate-100 font-medium">
           {meta.map((m, idx) => (
             <div key={idx} className="flex justify-between">
-              <span className="text-slate-500 font-medium">{m.label}:</span>
+              <span className="text-slate-500">{m.label}:</span>
               <span className="font-bold text-slate-900">{m.value}</span>
             </div>
           ))}
         </div>
 
-        <div className="flex items-center gap-2 pt-2">
+        <div className="flex items-center gap-3 pt-2">
           <button
             onClick={handleWhatsApp}
-            className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm"
+            className="flex-1 py-3.5 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold flex items-center justify-center gap-2 transition shadow-md"
           >
-            <Share2 size={14} />
+            <Share2 size={16} />
             <span>WhatsApp</span>
           </button>
 
@@ -1134,9 +1151,9 @@ function UniversalQRModal({
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
-            className="flex-1 py-2.5 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 transition"
+            className="flex-1 py-3.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-bold flex items-center justify-center gap-2 transition"
           >
-            {copied ? <Check size={14} className="text-emerald-600" /> : <Copy size={14} />}
+            {copied ? <Check size={16} className="text-emerald-600" /> : <Copy size={16} />}
             <span>{copied ? "Copied" : "Copy Code"}</span>
           </button>
 
@@ -1144,10 +1161,10 @@ function UniversalQRModal({
             <a
               href={qrUrl}
               download={`Pass_${token}.png`}
-              className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center justify-center transition"
+              className="p-3.5 rounded-2xl bg-slate-950 hover:bg-slate-800 text-white text-sm font-bold flex items-center justify-center transition shadow-md"
               title="Download PNG QR"
             >
-              <Download size={14} />
+              <Download size={16} />
             </a>
           )}
         </div>
@@ -1186,41 +1203,41 @@ function StaffLoginPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900/90 p-6 sm:p-8 shadow-2xl backdrop-blur-sm space-y-6">
-        <div className="text-center space-y-1">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600/10 border border-blue-500/20 text-blue-400 mb-2">
-            <Building size={24} />
+      <div className="w-full max-w-md rounded-3xl border border-slate-800 bg-slate-900/95 p-8 sm:p-10 shadow-2xl backdrop-blur-md space-y-6">
+        <div className="text-center space-y-2">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-600/15 border border-blue-500/30 text-blue-400 mb-2 shadow-lg">
+            <Building size={32} />
           </div>
-          <h2 className="text-xl font-bold text-white tracking-tight">Thapar Staff Portal</h2>
-          <p className="text-xs text-slate-400">Faculty, Staff &amp; Residence Management</p>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Thapar Staff Portal</h2>
+          <p className="text-sm text-slate-400">Faculty, Staff &amp; Residence Management</p>
         </div>
 
         {error && (
-          <div className="rounded-xl bg-rose-950/60 border border-rose-800/60 p-3 text-xs text-rose-300 flex items-center gap-2">
-            <AlertCircle size={14} className="shrink-0" />
+          <div className="rounded-2xl bg-rose-950/60 border border-rose-800/60 p-4 text-sm text-rose-300 flex items-center gap-2">
+            <AlertCircle size={18} className="shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="text-xs font-semibold text-slate-400">Faculty Campus Email</label>
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Faculty Campus Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+              className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3.5 text-base text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
               required
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400">Password / PIN</label>
+            <label className="text-xs uppercase tracking-wider font-bold text-slate-400">Password / PIN</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2 text-sm text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
+              className="mt-1.5 w-full rounded-2xl border border-slate-800 bg-slate-950 px-4 py-3.5 text-base text-white placeholder-slate-600 focus:border-blue-500 focus:outline-none"
               required
             />
           </div>
@@ -1228,21 +1245,21 @@ function StaffLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-500 py-2.5 text-xs font-bold text-white shadow-sm transition active:scale-95 disabled:opacity-50"
+            className="w-full flex items-center justify-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-500 py-4 text-sm font-bold text-white shadow-lg shadow-blue-600/25 transition active:scale-95 disabled:opacity-50"
           >
-            {loading ? <Loader2 size={14} className="animate-spin" /> : <ShieldCheck size={14} />}
+            {loading ? <Loader2 size={18} className="animate-spin" /> : <ShieldCheck size={18} />}
             <span>Sign In to Console</span>
           </button>
         </form>
 
-        <div className="border-t border-slate-800 pt-4 text-center">
+        <div className="border-t border-slate-800 pt-5 text-center">
           <button
             type="button"
             onClick={() => {
               setEmail("staff1@campus.edu");
               setPassword("staff123");
             }}
-            className="text-xs font-semibold text-blue-400 hover:text-blue-300 transition"
+            className="text-xs sm:text-sm font-bold text-blue-400 hover:text-blue-300 transition"
           >
             Fill Demo Faculty Account (staff1@campus.edu)
           </button>
