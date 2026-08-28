@@ -21,7 +21,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system";
 import { useAuth } from "../context/AuthContext";
-import { api, DEV_LAN_IP } from "../services/api";
+import { api } from "../services/api";
 
 type StaffTab = "parking" | "guests" | "house_helps" | "notices";
 
@@ -726,7 +726,6 @@ export default function StaffPortalScreen() {
           sub="THAPAR UNIVERSITY VEHICLE BADGE"
           name={user?.name || "Faculty Member"}
           token={selectedVehicleQR.plateNumber}
-          qrValue={`http://${DEV_LAN_IP}:3000/pass/${selectedVehicleQR.plateNumber}`}
           meta={[
             { label: "Model", value: selectedVehicleQR.modelName || selectedVehicleQR.vehicleType },
             { label: "Tier", value: `${selectedVehicleQR.stickerColor.toUpperCase()} PERMIT` },
@@ -745,7 +744,6 @@ export default function StaffPortalScreen() {
           name={selectedPassQR.guestName}
           token={selectedPassQR.token}
           phone={selectedPassQR.guestPhone}
-          qrValue={`http://${DEV_LAN_IP}:3000/pass/${selectedPassQR.token}`}
           meta={[
             { label: "Guest", value: selectedPassQR.guestName },
             { label: "Purpose", value: selectedPassQR.purpose || "Campus Visit" },
@@ -764,7 +762,6 @@ export default function StaffPortalScreen() {
           name={selectedHelpQR.name}
           token={selectedHelpQR.token}
           phone={selectedHelpQR.phone}
-          qrValue={`http://${DEV_LAN_IP}:3000/pass/${selectedHelpQR.token}`}
           meta={[
             { label: "Name", value: selectedHelpQR.name },
             { label: "Service", value: selectedHelpQR.serviceType },
@@ -1377,7 +1374,6 @@ function WhiteQRModal({
   name,
   token,
   phone,
-  qrValue,
   meta,
   onClose,
 }: {
@@ -1387,28 +1383,33 @@ function WhiteQRModal({
   name: string;
   token: string;
   phone?: string;
-  qrValue?: string;
   meta: { label: string; value: string }[];
   onClose: () => void;
 }) {
-  const finalQRData = qrValue || `http://${DEV_LAN_IP}:3000/pass/${token}`;
   const [sharing, setSharing] = useState(false);
   const qrSvgRef = useRef<any>(null);
 
-  // Shares the ACTUAL QR IMAGE directly via OS Share Sheet (WhatsApp, AirDrop, Messages)
-  const handleShareQRImage = async () => {
+  // Global scannable QR image link that opens on ANY phone/network in the world
+  const universalQRImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=600x600&data=${encodeURIComponent(
+    token
+  )}`;
+
+  // 1. Export actual PNG file and share it via Share Sheet into WhatsApp / Photos
+  const handleShareQRImageFile = async () => {
     try {
       setSharing(true);
       if (qrSvgRef.current && qrSvgRef.current.toDataURL) {
-        qrSvgRef.current.toDataURL(async (base64Data: string) => {
+        qrSvgRef.current.toDataURL(async (base64Raw: string) => {
           try {
-            const cleanToken = token.replace(/[^a-zA-Z0-9_-]/g, "_");
-            const fileUri = `${FileSystem.cacheDirectory}Thapar_Pass_${cleanToken}.png`;
-            await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+            const cleanBase64 = base64Raw.includes(",") ? base64Raw.split(",")[1] : base64Raw;
+            const fileUri = `${FileSystem.cacheDirectory}Pass_${token.replace(/[^a-zA-Z0-9]/g, "_")}.png`;
+
+            await FileSystem.writeAsStringAsync(fileUri, cleanBase64, {
               encoding: FileSystem.EncodingType.Base64,
             });
 
-            if (await Sharing.isAvailableAsync()) {
+            const isAvail = await Sharing.isAvailableAsync();
+            if (isAvail) {
               await Sharing.shareAsync(fileUri, {
                 mimeType: "image/png",
                 dialogTitle: `Share Gate Pass: ${name}`,
@@ -1416,12 +1417,12 @@ function WhiteQRModal({
               });
             } else {
               await Share.share({
-                message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Token: ${token}\n🔗 Digital Pass: ${finalQRData}`,
+                message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Code: ${token}\n🖼️ View QR: ${universalQRImageUrl}`,
               });
             }
-          } catch (err: any) {
+          } catch {
             await Share.share({
-              message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Token: ${token}\n🔗 Digital Pass: ${finalQRData}`,
+              message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Code: ${token}\n🖼️ View QR: ${universalQRImageUrl}`,
             });
           } finally {
             setSharing(false);
@@ -1429,7 +1430,7 @@ function WhiteQRModal({
         });
       } else {
         await Share.share({
-          message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Token: ${token}\n🔗 Digital Pass: ${finalQRData}`,
+          message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Code: ${token}\n🖼️ View QR: ${universalQRImageUrl}`,
         });
         setSharing(false);
       }
@@ -1438,9 +1439,9 @@ function WhiteQRModal({
     }
   };
 
-  // Direct WhatsApp Text & Working Link Invocation
-  const handleWhatsAppText = async () => {
-    const msg = `🏛️ *THAPAR UNIVERSITY GATE PASS*\n\n📋 *Pass:* ${title}\n👤 *Guest/Helper:* ${name}\n🔑 *Token Code:* ${token}\n\n🔗 *Digital QR Pass:* ${finalQRData}\n\n_Show this QR code at Campus Gate 1–4 for 1-scan barrier clearance._`;
+  // 2. Direct WhatsApp text message with the working universal QR link
+  const handleWhatsAppMessage = async () => {
+    const msg = `🏛️ *THAPAR UNIVERSITY GATE CLEARANCE*\n\n📋 *Pass:* ${title}\n👤 *Issued For:* ${name}\n🔑 *Token Code:* ${token}\n\n🖼️ *Instant Scannable QR Pass (Tap to Open):*\n${universalQRImageUrl}\n\n_Show this QR code to the security guard at Gate 1–4 for 1-scan barrier entry._`;
     const cleanPhone = phone?.replace(/[^0-9]/g, "") || "";
     const nativeWa = cleanPhone.length >= 10
       ? `whatsapp://send?phone=91${cleanPhone.slice(-10)}&text=${encodeURIComponent(msg)}`
@@ -1457,7 +1458,10 @@ function WhiteQRModal({
         await Linking.openURL(webWa);
       }
     } catch {
-      await handleShareQRImage();
+      await Share.share({
+        message: msg,
+        title: `Gate Pass - ${name}`,
+      });
     }
   };
 
@@ -1475,7 +1479,7 @@ function WhiteQRModal({
           {/* Genuine 2D Vector Scannable QR Matrix with ref */}
           <View style={modalStyles.qrBox}>
             <QRCode
-              value={finalQRData}
+              value={token}
               size={180}
               color="#0f172a"
               backgroundColor="#ffffff"
@@ -1494,27 +1498,27 @@ function WhiteQRModal({
             ))}
           </View>
 
-          {/* Action Buttons: 1 for WhatsApp QR Image File, 1 for WhatsApp Text Link */}
+          {/* Dual Action Buttons */}
           <View style={{ gap: 8, width: "100%" }}>
             <TouchableOpacity
               style={modalStyles.shareImgMainBtn}
-              onPress={handleShareQRImage}
+              onPress={handleShareQRImageFile}
               disabled={sharing}
               activeOpacity={0.85}
             >
               {sharing ? (
                 <ActivityIndicator color="#ffffff" size="small" />
               ) : (
-                <Text style={modalStyles.shareImgMainBtnText}>🖼️ Send QR Photo to WhatsApp / Contacts</Text>
+                <Text style={modalStyles.shareImgMainBtnText}>🖼️ Send QR Image to WhatsApp / Save to Photos</Text>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
               style={modalStyles.waTextBtn}
-              onPress={handleWhatsAppText}
+              onPress={handleWhatsAppMessage}
               activeOpacity={0.85}
             >
-              <Text style={modalStyles.waTextBtnText}>💬 Send WhatsApp Text &amp; Link</Text>
+              <Text style={modalStyles.waTextBtnText}>💬 Send WhatsApp Text &amp; Universal QR Link</Text>
             </TouchableOpacity>
           </View>
         </View>
