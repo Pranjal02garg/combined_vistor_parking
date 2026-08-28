@@ -962,25 +962,11 @@ function CreateGuestPassModal({
         purpose,
         vehicleNumber: vehicleNumber ? vehicleNumber.toUpperCase().trim() : undefined,
       });
-      onCreated(res.pass || {
-        id: `vip_${Date.now()}`,
-        token: `VIP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-        guestName,
-        guestPhone,
-        purpose,
-        vehicleNumber,
-        status: "APPROVED",
-      });
-    } catch {
-      onCreated({
-        id: `vip_${Date.now()}`,
-        token: `VIP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-        guestName,
-        guestPhone,
-        purpose,
-        vehicleNumber,
-        status: "APPROVED",
-      });
+      if (res?.pass) {
+        onCreated(res.pass);
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to create pass");
     } finally {
       setSaving(false);
     }
@@ -1143,23 +1129,27 @@ function AddHouseHelpModal({
       Alert.alert("Required", "Please enter 10-digit mobile number");
       return;
     }
-    const clean = phone.replace(/[^0-9]/g, "").slice(-10);
-    const newH = {
-      id: `hlp_${Date.now()}`,
-      token: `HLP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-      name: name.trim() || "Domestic Helper",
-      phone: clean,
-      serviceType,
-      quarterNumber,
-      workShift,
-      idProofType,
-      idProofNumber: idProofNumber.trim() || undefined,
-      idProofDocUrl: idProofDocUrl || undefined,
-      photoUrl: photoUrl || undefined,
-      isActive: true,
-      status: "APPROVED",
-    };
-    onCreated(newH);
+    setSaving(true);
+    try {
+      const res = await api.registerHouseHelp({
+        phone: phone.trim(),
+        name: name.trim() || undefined,
+        serviceType,
+        quarterNumber,
+        workShift,
+        idProofType,
+        idProofNumber: idProofNumber.trim() || undefined,
+        idProofDocUrl: idProofDocUrl || undefined,
+        photoUrl: photoUrl || undefined,
+      });
+      if (res?.help) {
+        onCreated(res.help);
+      }
+    } catch (err: any) {
+      Alert.alert("Error", err?.message || "Failed to register staff");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

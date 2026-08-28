@@ -27,8 +27,8 @@ export async function POST(req: Request) {
   try {
     const { guestName, guestPhone, purpose, vehicleNumber, validFrom, validUntil } = await req.json();
 
-    if (!guestName || !guestPhone || !purpose) {
-      return fail(400, "Guest name, phone, and purpose are required");
+    if (!guestName || !purpose) {
+      return fail(400, "Guest name and purpose are required");
     }
 
     const token = `VIP-${crypto.randomBytes(4).toString("hex").toUpperCase()}`;
@@ -37,17 +37,16 @@ export async function POST(req: Request) {
     const pass = await prisma.vIPPass.create({
       data: {
         token,
-        guestName,
-        guestPhone,
-        purpose,
+        guestName: guestName.trim(),
+        guestPhone: (guestPhone || "").trim(),
+        purpose: purpose.trim(),
         vehicleNumber: vehicleNumber ? vehicleNumber.toUpperCase().trim() : null,
         validFrom: validFrom ? new Date(validFrom) : new Date(),
         validUntil: validUntil ? new Date(validUntil) : new Date(Date.now() + 24 * 60 * 60 * 1000),
-        status: user.role === "HEAD" ? "APPROVED" : "PENDING",
+        status: "APPROVED", // Auto-approved for direct gate clearance
         hostStaffId: user.id,
         entryGateId: defaultGate?.id || null,
-        approvedAt: user.role === "HEAD" ? new Date() : null,
-        approvedById: user.role === "HEAD" ? user.id : null,
+        approvedAt: new Date(),
       },
     });
 
