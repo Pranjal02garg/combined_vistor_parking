@@ -28,7 +28,7 @@ const SERVICE_CATEGORIES = [
   { id: "DRIVER", label: "Driver", icon: "🚗" },
   { id: "CLEANER", label: "Cleaner", icon: "🧼" },
   { id: "GARDENER", label: "Gardener", icon: "🌱" },
-  { id: "OTHER", label: "Other Household Staff", icon: "👤" },
+  { id: "OTHER", label: "Other Staff", icon: "👤" },
 ];
 
 const ID_PROOF_TYPES = [
@@ -86,10 +86,10 @@ export default function StaffPortalScreen() {
         api.getHouseHelps().catch(() => ({ helps: [] })),
       ]);
 
-      setCars(carsRes.cars || []);
-      setLots(lotsRes.lots || []);
-      setPasses(passesRes.passes || []);
-      setHelps(helpsRes.helps || []);
+      setCars(carsRes?.cars || []);
+      setLots(lotsRes?.lots || []);
+      setPasses(passesRes?.passes || []);
+      setHelps(helpsRes?.helps || []);
 
       setNotices([
         {
@@ -102,7 +102,7 @@ export default function StaffPortalScreen() {
         },
       ]);
     } catch {
-      // fallback
+      // safe fallback
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -218,9 +218,7 @@ export default function StaffPortalScreen() {
           />
         }
       >
-        {/* ===================================================================
-            TAB 1: PARKING & GATE ACCESS
-           =================================================================== */}
+        {/* TAB 1: PARKING & GATE ACCESS */}
         {activeTab === "parking" && (
           <View style={styles.sectionSpace}>
             {/* Faculty Permit Card */}
@@ -414,9 +412,7 @@ export default function StaffPortalScreen() {
           </View>
         )}
 
-        {/* ===================================================================
-            TAB 2: GUEST PASSES
-           =================================================================== */}
+        {/* TAB 2: GUEST PASSES */}
         {activeTab === "guests" && (
           <View style={styles.sectionSpace}>
             <View style={styles.tabSectionHeaderRow}>
@@ -508,9 +504,7 @@ export default function StaffPortalScreen() {
           </View>
         )}
 
-        {/* ===================================================================
-            TAB 3: HOUSE HELPS & MAIDS (WITH PHOTO/DOCUMENT UPLOADS)
-           =================================================================== */}
+        {/* TAB 3: HOUSE HELPS & MAIDS */}
         {activeTab === "house_helps" && (
           <View style={styles.sectionSpace}>
             <View style={styles.tabSectionHeaderRow}>
@@ -667,9 +661,7 @@ export default function StaffPortalScreen() {
           </View>
         )}
 
-        {/* ===================================================================
-            TAB 4: SECURITY NOTICES
-           =================================================================== */}
+        {/* TAB 4: SECURITY NOTICES */}
         {activeTab === "notices" && (
           <View style={styles.sectionSpace}>
             <View>
@@ -724,7 +716,7 @@ export default function StaffPortalScreen() {
         }}
       />
 
-      {/* 3. ADD HOUSE HELP MODAL (WITH UPLOADS & DROPDOWNS) */}
+      {/* 3. ADD HOUSE HELP MODAL */}
       <AddHouseHelpModal
         visible={showAddHelpModal}
         onClose={() => setShowAddHelpModal(false)}
@@ -856,12 +848,11 @@ function AddVehicleModal({
         base64: true,
       });
 
-      if (!result.canceled && result.assets[0]) {
-        const uri = result.assets[0].uri;
-        setRcDocUrl(uri);
+      if (!result.canceled && result.assets && result.assets[0]) {
+        setRcDocUrl(result.assets[0].uri);
       }
     } catch {
-      Alert.alert("Permission Needed", "Please grant photo library access to upload documents.");
+      Alert.alert("Notice", "Photo library access needed for document upload.");
     }
   };
 
@@ -1167,11 +1158,11 @@ function AddHouseHelpModal({
         base64: true,
       });
 
-      if (!result.canceled && result.assets[0]) {
+      if (!result.canceled && result.assets && result.assets[0]) {
         setIdProofDocUrl(result.assets[0].uri);
       }
     } catch {
-      Alert.alert("Permission Needed", "Please grant photo library access to upload ID scan.");
+      Alert.alert("Notice", "Photo library access needed for ID scan upload.");
     }
   };
 
@@ -1184,11 +1175,11 @@ function AddHouseHelpModal({
         base64: true,
       });
 
-      if (!result.canceled && result.assets[0]) {
+      if (!result.canceled && result.assets && result.assets[0]) {
         setPhotoUrl(result.assets[0].uri);
       }
     } catch {
-      Alert.alert("Permission Needed", "Please grant photo library access to upload helper selfie.");
+      Alert.alert("Notice", "Photo library access needed for helper selfie upload.");
     }
   };
 
@@ -1255,7 +1246,7 @@ function AddHouseHelpModal({
               onChangeText={setName}
             />
 
-            {/* Service Category Dropdown Buttons */}
+            {/* Service Category Buttons */}
             <Text style={modalStyles.label}>Service Category</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
               <View style={{ flexDirection: "row", gap: 6 }}>

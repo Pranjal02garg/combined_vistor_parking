@@ -1,8 +1,8 @@
 import { Platform } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Automatically use LAN IP on physical phones so it can connect to local server
-export const DEV_LAN_IP = "192.168.1.9";
+// Automatically use current LAN IP
+export const DEV_LAN_IP = "192.168.1.8";
 export const API_BASE_URL =
   Platform.OS === "web"
     ? "http://localhost:3000/api/mobile"
@@ -99,37 +99,19 @@ const DEMO_VIP_PASSES = [
     token: "VIP-TATAMEM9900",
     guestName: "Dr. Arvind Subramanian",
     guestPhone: "9876543210",
-    visitType: "OFFICIAL",
-    tier: "VIP",
-    purpose: "External Ph.D. Examiner • CSE Dept",
-    vehicleNumber: "HR26DX9900",
+    purpose: "Academic Review Board",
+    vehicleNumber: "CH01AB9988",
     status: "APPROVED",
-    validFrom: "2026-08-28T09:00:00.000Z",
-    validUntil: "2026-08-28T18:00:00.000Z",
-    createdAt: "2026-08-28T04:00:00.000Z",
-  },
-  {
-    id: "vip_2",
-    token: "VIP-GOOGLECLD7700",
-    guestName: "Ms. Sunita Reddy",
-    guestPhone: "9812345678",
-    visitType: "OFFICIAL",
-    tier: "DELEGATE",
-    purpose: "Managing Director • Google Cloud India",
-    vehicleNumber: "CH01GA7700",
-    status: "CHECKED_IN",
-    entryGateCode: "1",
-    enteredAt: "2026-08-28T04:15:00.000Z",
-    validFrom: "2026-08-28T09:00:00.000Z",
-    validUntil: "2026-08-28T18:00:00.000Z",
-    createdAt: "2026-08-28T03:30:00.000Z",
+    validFrom: new Date().toISOString(),
+    validUntil: new Date(Date.now() + 86400000).toISOString(),
+    createdAt: new Date().toISOString(),
   },
 ];
 
 const DEMO_HOUSE_HELPS = [
   {
     id: "hlp_1",
-    token: "HLP-MAID-881244",
+    token: "HLP-M4890",
     name: "Sunita Devi",
     phone: "9876500111",
     serviceType: "MAID",
@@ -142,27 +124,14 @@ const DEMO_HOUSE_HELPS = [
   },
   {
     id: "hlp_2",
-    token: "HLP-COOK-889011",
-    name: "Ramesh Kumar",
+    token: "HLP-D1022",
+    name: "Raju Kumar",
     phone: "9876500222",
-    serviceType: "COOK",
-    quarterNumber: "Faculty Residence B-104",
-    workShift: "Evening (17:00 - 20:30)",
-    idProofType: "AADHAAR",
-    idProofNumber: "4521-8890-1123",
-    isActive: true,
-    status: "APPROVED",
-  },
-  {
-    id: "hlp_3",
-    token: "HLP-DRV-009182",
-    name: "Jasbir Singh",
-    phone: "9876500333",
     serviceType: "DRIVER",
     quarterNumber: "Faculty Residence B-104",
-    workShift: "Full Day (08:30 - 18:30)",
+    workShift: "Full Day (08:00 - 18:00)",
     idProofType: "DRIVING_LICENSE",
-    idProofNumber: "PB11-2018-0091823",
+    idProofNumber: "DL-1120200049",
     isActive: true,
     status: "APPROVED",
   },
@@ -170,11 +139,7 @@ const DEMO_HOUSE_HELPS = [
 
 export const api = {
   async getToken(): Promise<string | null> {
-    try {
-      return await AsyncStorage.getItem(TOKEN_STORAGE_KEY);
-    } catch {
-      return "demo_token";
-    }
+    return AsyncStorage.getItem(TOKEN_STORAGE_KEY);
   },
 
   async setSession(token: string, user: MobileUser) {
@@ -207,9 +172,8 @@ export const api = {
       headers["Authorization"] = `Bearer ${token}`;
     }
 
-    // Set a 4-second timeout to avoid long hanging requests on mobile
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
+    const timeoutId = setTimeout(() => controller.abort(), 3500);
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -221,7 +185,7 @@ export const api = {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Network request failed");
+        throw new Error(data.error || "Request failed");
       }
       return data;
     } catch (err: any) {
@@ -230,7 +194,7 @@ export const api = {
     }
   },
 
-  // Auth APIs
+  // Auth
   async login(email: string, password: string): Promise<{ token: string; user: MobileUser }> {
     try {
       const liveRes = await this.request<{ token: string; user: MobileUser }>("/auth/login", {
@@ -240,7 +204,6 @@ export const api = {
       await this.setSession(liveRes.token, liveRes.user);
       return liveRes;
     } catch {
-      // Graceful offline fallback
       const token = "jwt_demo_fallback_token";
       const user: MobileUser = {
         ...DEMO_USER,
@@ -261,7 +224,7 @@ export const api = {
     }
   },
 
-  // Parking & Barrier APIs
+  // Parking & Vehicles
   async getCars(): Promise<{ cars: any[] }> {
     try {
       return await this.request<{ cars: any[] }>("/cars");
@@ -270,26 +233,27 @@ export const api = {
     }
   },
 
-  async registerCar(payload: {
+  async registerCar(data: {
     plateNumber: string;
-    stickerColor: string;
-    vehicleType: string;
     modelName?: string;
-  }): Promise<{ car: any; message: string }> {
+    stickerColor: string;
+    vehicleType?: string;
+  }): Promise<{ car: any }> {
     try {
-      return await this.request("/cars", {
+      return await this.request<{ car: any }>("/cars", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(data),
       });
     } catch {
-      const newCar = {
-        id: `car_${Date.now()}`,
-        plateNumber: payload.plateNumber.toUpperCase(),
-        stickerColor: payload.stickerColor || "green",
-        vehicleType: payload.vehicleType || "CAR",
-        modelName: payload.modelName || "Registered Vehicle",
+      return {
+        car: {
+          id: `car_${Date.now()}`,
+          plateNumber: data.plateNumber,
+          modelName: data.modelName || "Registered Vehicle",
+          stickerColor: data.stickerColor,
+          vehicleType: data.vehicleType || "CAR",
+        },
       };
-      return { car: newCar, message: "Vehicle Registered Successfully!" };
     }
   },
 
@@ -301,34 +265,28 @@ export const api = {
     }
   },
 
-  async openBarrier(): Promise<{ success: boolean; message: string; gate: string }> {
+  async openBarrier(): Promise<{ success: boolean; gate: string }> {
     try {
-      return await this.request("/barrier/open", { method: "POST" });
+      return await this.request<{ success: boolean; gate: string }>("/barrier/open", {
+        method: "POST",
+      });
     } catch {
-      return {
-        success: true,
-        message: "Barrier Open Signal Delivered to Gate 1 (12s Pulse)",
-        gate: "Gate 1",
-      };
+      return { success: true, gate: "Gate 1 (Main Gate)" };
     }
   },
 
-  async scanGateQR(qrPayload: string): Promise<{ success: boolean; message: string; gateName: string }> {
+  async scanGateQR(qrPayload: string): Promise<{ success: boolean; gateName: string }> {
     try {
-      return await this.request("/barrier/scan", {
+      return await this.request<{ success: boolean; gateName: string }>("/barrier/scan", {
         method: "POST",
         body: JSON.stringify({ qrPayload }),
       });
     } catch {
-      return {
-        success: true,
-        message: `Gate Barrier Authenticated for ${qrPayload || "Gate 1"}`,
-        gateName: qrPayload || "Gate 1",
-      };
+      return { success: true, gateName: "Gate 1 (Main Entry)" };
     }
   },
 
-  // VIP Guest Passes
+  // Guest Passes
   async getVIPPasses(): Promise<{ passes: any[] }> {
     try {
       return await this.request<{ passes: any[] }>("/vip");
@@ -337,31 +295,34 @@ export const api = {
     }
   },
 
-  async createVIPPass(payload: {
+  async createVIPPass(data: {
     guestName: string;
     guestPhone?: string;
     purpose?: string;
     vehicleNumber?: string;
     validFrom?: string;
     validUntil?: string;
-  }): Promise<{ pass: any; message: string }> {
+  }): Promise<{ pass: any }> {
     try {
-      return await this.request("/vip", {
+      return await this.request<{ pass: any }>("/vip", {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(data),
       });
     } catch {
-      const newPass = {
-        id: `vip_${Date.now()}`,
-        token: `VIP-${Math.random().toString(36).substring(2, 9).toUpperCase()}`,
-        guestName: payload.guestName,
-        guestPhone: payload.guestPhone,
-        purpose: payload.purpose || "Official Campus Visit",
-        vehicleNumber: payload.vehicleNumber,
-        status: "APPROVED",
-        createdAt: new Date().toISOString(),
+      return {
+        pass: {
+          id: `vip_${Date.now()}`,
+          token: `VIP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          guestName: data.guestName,
+          guestPhone: data.guestPhone || "9876543210",
+          purpose: data.purpose || "Official Guest Visit",
+          vehicleNumber: data.vehicleNumber,
+          status: "APPROVED",
+          validFrom: data.validFrom || new Date().toISOString(),
+          validUntil: data.validUntil || new Date(Date.now() + 86400000).toISOString(),
+          createdAt: new Date().toISOString(),
+        },
       };
-      return { pass: newPass, message: "VIP Pass Generated Successfully!" };
     }
   },
 
@@ -371,6 +332,43 @@ export const api = {
       return await this.request<{ helps: any[] }>("/house-help");
     } catch {
       return { helps: DEMO_HOUSE_HELPS };
+    }
+  },
+
+  async registerHouseHelp(data: {
+    phone: string;
+    name?: string;
+    serviceType: string;
+    quarterNumber?: string;
+    workShift?: string;
+    idProofType?: string;
+    idProofNumber?: string;
+    idProofDocUrl?: string;
+    photoUrl?: string;
+  }): Promise<{ help: any }> {
+    try {
+      return await this.request<{ help: any }>("/house-help", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    } catch {
+      return {
+        help: {
+          id: `hlp_${Date.now()}`,
+          token: `HLP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          name: data.name || "Domestic Helper",
+          phone: data.phone,
+          serviceType: data.serviceType,
+          quarterNumber: data.quarterNumber || "Faculty Residence",
+          workShift: data.workShift || "General Shift",
+          idProofType: data.idProofType || "AADHAAR",
+          idProofNumber: data.idProofNumber,
+          idProofDocUrl: data.idProofDocUrl,
+          photoUrl: data.photoUrl,
+          isActive: true,
+          status: "APPROVED",
+        },
+      };
     }
   },
 };
