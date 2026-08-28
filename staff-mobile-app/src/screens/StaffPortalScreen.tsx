@@ -21,7 +21,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as Sharing from "expo-sharing";
 import * as FileSystem from "expo-file-system";
 import { useAuth } from "../context/AuthContext";
-import { api } from "../services/api";
+import { api, DEV_LAN_IP } from "../services/api";
 
 type StaffTab = "parking" | "guests" | "house_helps" | "notices";
 
@@ -726,7 +726,7 @@ export default function StaffPortalScreen() {
           sub="THAPAR UNIVERSITY VEHICLE BADGE"
           name={user?.name || "Faculty Member"}
           token={selectedVehicleQR.plateNumber}
-          qrValue={`https://campus.thapar.edu/vehicle/${selectedVehicleQR.plateNumber}`}
+          qrValue={`http://${DEV_LAN_IP}:3000/pass/${selectedVehicleQR.plateNumber}`}
           meta={[
             { label: "Model", value: selectedVehicleQR.modelName || selectedVehicleQR.vehicleType },
             { label: "Tier", value: `${selectedVehicleQR.stickerColor.toUpperCase()} PERMIT` },
@@ -745,7 +745,7 @@ export default function StaffPortalScreen() {
           name={selectedPassQR.guestName}
           token={selectedPassQR.token}
           phone={selectedPassQR.guestPhone}
-          qrValue={`https://campus.thapar.edu/pass/${selectedPassQR.token}`}
+          qrValue={`http://${DEV_LAN_IP}:3000/pass/${selectedPassQR.token}`}
           meta={[
             { label: "Guest", value: selectedPassQR.guestName },
             { label: "Purpose", value: selectedPassQR.purpose || "Campus Visit" },
@@ -764,7 +764,7 @@ export default function StaffPortalScreen() {
           name={selectedHelpQR.name}
           token={selectedHelpQR.token}
           phone={selectedHelpQR.phone}
-          qrValue={`https://campus.thapar.edu/pass/${selectedHelpQR.token}`}
+          qrValue={`http://${DEV_LAN_IP}:3000/pass/${selectedHelpQR.token}`}
           meta={[
             { label: "Name", value: selectedHelpQR.name },
             { label: "Service", value: selectedHelpQR.serviceType },
@@ -1391,65 +1391,73 @@ function WhiteQRModal({
   meta: { label: string; value: string }[];
   onClose: () => void;
 }) {
-  const finalQRData = qrValue || `https://campus.thapar.edu/pass/${token}`;
-  const [sharingImg, setSharingImg] = useState(false);
+  const finalQRData = qrValue || `http://${DEV_LAN_IP}:3000/pass/${token}`;
+  const [sharing, setSharing] = useState(false);
   const qrSvgRef = useRef<any>(null);
 
-  const handleWhatsApp = async () => {
-    const msg = `🏛️ *THAPAR UNIVERSITY GATE PASS*\n\n📋 *Pass Type:* ${title}\n👤 *Issued For:* ${name}\n🔑 *Token Code:* ${token}\n\n🔗 *Digital QR Pass:* ${finalQRData}\n\n_Show this QR at Campus Gate 1–4 for 1-scan barrier entry._`;
+  // Shares the ACTUAL QR IMAGE directly via OS Share Sheet (WhatsApp, AirDrop, Messages)
+  const handleShareQRImage = async () => {
+    try {
+      setSharing(true);
+      if (qrSvgRef.current && qrSvgRef.current.toDataURL) {
+        qrSvgRef.current.toDataURL(async (base64Data: string) => {
+          try {
+            const cleanToken = token.replace(/[^a-zA-Z0-9_-]/g, "_");
+            const fileUri = `${FileSystem.cacheDirectory}Thapar_Pass_${cleanToken}.png`;
+            await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+              encoding: FileSystem.EncodingType.Base64,
+            });
+
+            if (await Sharing.isAvailableAsync()) {
+              await Sharing.shareAsync(fileUri, {
+                mimeType: "image/png",
+                dialogTitle: `Share Gate Pass: ${name}`,
+                UTI: "public.png",
+              });
+            } else {
+              await Share.share({
+                message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Token: ${token}\n🔗 Digital Pass: ${finalQRData}`,
+              });
+            }
+          } catch (err: any) {
+            await Share.share({
+              message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Token: ${token}\n🔗 Digital Pass: ${finalQRData}`,
+            });
+          } finally {
+            setSharing(false);
+          }
+        });
+      } else {
+        await Share.share({
+          message: `🏛️ Thapar University Gate Pass\n👤 ${name}\n🔑 Token: ${token}\n🔗 Digital Pass: ${finalQRData}`,
+        });
+        setSharing(false);
+      }
+    } catch {
+      setSharing(false);
+    }
+  };
+
+  // Direct WhatsApp Text & Working Link Invocation
+  const handleWhatsAppText = async () => {
+    const msg = `🏛️ *THAPAR UNIVERSITY GATE PASS*\n\n📋 *Pass:* ${title}\n👤 *Guest/Helper:* ${name}\n🔑 *Token Code:* ${token}\n\n🔗 *Digital QR Pass:* ${finalQRData}\n\n_Show this QR code at Campus Gate 1–4 for 1-scan barrier clearance._`;
     const cleanPhone = phone?.replace(/[^0-9]/g, "") || "";
-    const waUrl = cleanPhone.length >= 10
+    const nativeWa = cleanPhone.length >= 10
       ? `whatsapp://send?phone=91${cleanPhone.slice(-10)}&text=${encodeURIComponent(msg)}`
       : `whatsapp://send?text=${encodeURIComponent(msg)}`;
-    const webFallback = cleanPhone.length >= 10
+    const webWa = cleanPhone.length >= 10
       ? `https://api.whatsapp.com/send?phone=91${cleanPhone.slice(-10)}&text=${encodeURIComponent(msg)}`
       : `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`;
 
     try {
-      const canOpen = await Linking.canOpenURL(waUrl);
+      const canOpen = await Linking.canOpenURL(nativeWa);
       if (canOpen) {
-        await Linking.openURL(waUrl);
+        await Linking.openURL(nativeWa);
       } else {
-        await Linking.openURL(webFallback);
+        await Linking.openURL(webWa);
       }
     } catch {
-      await Share.share({
-        message: msg,
-        title: `Gate Pass - ${name}`,
-      });
-    }
-  };
-
-  const handleSharePass = async () => {
-    const msg = `🏛️ Thapar University Gate Pass\nPass Type: ${title}\nIssued For: ${name}\nToken: ${token}\nDigital Pass Link: ${finalQRData}`;
-    try {
-      setSharingImg(true);
-      if (qrSvgRef.current && qrSvgRef.current.toDataURL) {
-        qrSvgRef.current.toDataURL(async (data: string) => {
-          try {
-            const filename = `${FileSystem.cacheDirectory}pass_${token}.png`;
-            await FileSystem.writeAsStringAsync(filename, data, {
-              encoding: FileSystem.EncodingType.Base64,
-            });
-            if (await Sharing.isAvailableAsync()) {
-              await Sharing.shareAsync(filename, {
-                mimeType: "image/png",
-                dialogTitle: `Share Gate Pass: ${name}`,
-              });
-              setSharingImg(false);
-              return;
-            }
-          } catch {}
-          await Share.share({ message: msg, title: `Gate Pass - ${name}` });
-          setSharingImg(false);
-        });
-      } else {
-        await Share.share({ message: msg, title: `Gate Pass - ${name}` });
-        setSharingImg(false);
-      }
-    } catch {
-      await Share.share({ message: msg, title: `Gate Pass - ${name}` });
-      setSharingImg(false);
+      await handleShareQRImage();
     }
   };
 
@@ -1486,17 +1494,27 @@ function WhiteQRModal({
             ))}
           </View>
 
-          <View style={{ flexDirection: "row", gap: 10, width: "100%" }}>
-            <TouchableOpacity style={modalStyles.waBtn} onPress={handleWhatsApp} activeOpacity={0.85}>
-              <Text style={modalStyles.waBtnText}>💬 WhatsApp</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={modalStyles.shareBtn} onPress={handleSharePass} activeOpacity={0.85}>
-              {sharingImg ? (
+          {/* Action Buttons: 1 for WhatsApp QR Image File, 1 for WhatsApp Text Link */}
+          <View style={{ gap: 8, width: "100%" }}>
+            <TouchableOpacity
+              style={modalStyles.shareImgMainBtn}
+              onPress={handleShareQRImage}
+              disabled={sharing}
+              activeOpacity={0.85}
+            >
+              {sharing ? (
                 <ActivityIndicator color="#ffffff" size="small" />
               ) : (
-                <Text style={modalStyles.shareBtnText}>📤 Share QR Image</Text>
+                <Text style={modalStyles.shareImgMainBtnText}>🖼️ Send QR Photo to WhatsApp / Contacts</Text>
               )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={modalStyles.waTextBtn}
+              onPress={handleWhatsAppText}
+              activeOpacity={0.85}
+            >
+              <Text style={modalStyles.waTextBtnText}>💬 Send WhatsApp Text &amp; Link</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1923,8 +1941,20 @@ const modalStyles = StyleSheet.create({
   metaLineRow: { fontSize: 11, color: "#334155", marginBottom: 2 },
   metaLineLabel: { fontWeight: "700", color: "#64748b" },
   metaLineVal: { fontWeight: "800", color: "#0f172a" },
-  waBtn: { flex: 1, backgroundColor: "#059669", paddingVertical: 12, borderRadius: 12, alignItems: "center" },
-  waBtnText: { color: "#ffffff", fontSize: 12, fontWeight: "800" },
-  shareBtn: { flex: 1, backgroundColor: "#0f172a", paddingVertical: 12, borderRadius: 12, alignItems: "center" },
-  shareBtnText: { color: "#ffffff", fontSize: 12, fontWeight: "800" },
+  shareImgMainBtn: {
+    backgroundColor: "#059669",
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    width: "100%",
+  },
+  shareImgMainBtnText: { color: "#ffffff", fontSize: 12, fontWeight: "900" },
+  waTextBtn: {
+    backgroundColor: "#0f172a",
+    paddingVertical: 11,
+    borderRadius: 12,
+    alignItems: "center",
+    width: "100%",
+  },
+  waTextBtnText: { color: "#e2e8f0", fontSize: 11, fontWeight: "700" },
 });
