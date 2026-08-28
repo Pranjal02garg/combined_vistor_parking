@@ -16,10 +16,34 @@ import {
   SafeAreaView,
   Image,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
 
 type StaffTab = "parking" | "guests" | "house_helps" | "notices";
+
+const SERVICE_CATEGORIES = [
+  { id: "MAID", label: "Maid / Domestic Help", icon: "🧹" },
+  { id: "COOK", label: "Cook / Chef", icon: "🍳" },
+  { id: "DRIVER", label: "Driver", icon: "🚗" },
+  { id: "CLEANER", label: "Cleaner", icon: "🧼" },
+  { id: "GARDENER", label: "Gardener", icon: "🌱" },
+  { id: "OTHER", label: "Other Household Staff", icon: "👤" },
+];
+
+const ID_PROOF_TYPES = [
+  { id: "AADHAAR", label: "Aadhaar Card" },
+  { id: "VOTER_ID", label: "Voter ID Card" },
+  { id: "DRIVING_LICENSE", label: "Driving License" },
+  { id: "PASSPORT", label: "Passport" },
+  { id: "OTHER", label: "Other Govt Photo ID" },
+];
+
+const VEHICLE_TYPES = [
+  { id: "CAR", label: "Car (4-Wheeler)", icon: "🚗" },
+  { id: "BIKE", label: "Motorcycle / Scooter (2-Wheeler)", icon: "🛵" },
+  { id: "EV", label: "Electric Vehicle (EV)", icon: "⚡" },
+];
 
 export default function StaffPortalScreen() {
   const { user, logout } = useAuth();
@@ -67,14 +91,13 @@ export default function StaffPortalScreen() {
       setPasses(passesRes.passes || []);
       setHelps(helpsRes.helps || []);
 
-      // Mock notices if empty
       setNotices([
         {
           id: "not_1",
-          title: "Annual Faculty Parking Pass Verification",
+          title: "Annual Faculty Parking Sticker Verification",
           severity: "MEDIUM",
           createdAt: new Date().toISOString(),
-          description: "All faculty vehicles must have their FASTag / RFID sticker verified at Gate 1 security office by Friday.",
+          description: "All faculty vehicles must verify their Fast-Lane ANPR / RFID sticker at Gate 1 security office.",
           resolution: "Active notice for Faculty Residence Block B.",
         },
       ]);
@@ -120,7 +143,7 @@ export default function StaffPortalScreen() {
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      {/* Top Sticky Header (Exact Web Clone) */}
+      {/* Top Sticky Header */}
       <View style={styles.topHeader}>
         <View style={styles.headerTitleRow}>
           <View style={styles.crestBox}>
@@ -142,7 +165,7 @@ export default function StaffPortalScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 4-Tab Navigation Bar (Exact Web Clone) */}
+        {/* 4-Tab Navigation Bar */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -152,7 +175,7 @@ export default function StaffPortalScreen() {
           {[
             { id: "parking", label: "Parking & Access", icon: "🚗", count: cars.length },
             { id: "guests", label: "Guest Passes", icon: "🎟️", count: passes.length },
-            { id: "house_helps", label: "House Helps", icon: "🧹", count: helps.length },
+            { id: "house_helps", label: "House Helps & Maids", icon: "🧹", count: helps.length },
             { id: "notices", label: "Security Notices", icon: "⚠️", count: notices.length },
           ].map((tab) => {
             const active = activeTab === tab.id;
@@ -338,6 +361,11 @@ export default function StaffPortalScreen() {
                       <View style={{ flex: 1 }}>
                         <Text style={styles.carPlateMono}>{car.plateNumber}</Text>
                         <Text style={styles.carModelText}>{car.modelName || car.vehicleType}</Text>
+                        {car.rcDocUrl && (
+                          <Text style={{ fontSize: 10, color: "#34d399", marginTop: 2 }}>
+                            ✓ RC Document Attached
+                          </Text>
+                        )}
                       </View>
                       <View style={{ alignItems: "flex-end" }}>
                         <View
@@ -387,7 +415,7 @@ export default function StaffPortalScreen() {
         )}
 
         {/* ===================================================================
-            TAB 2: GUEST PASSES (EXACT WEB CLONE)
+            TAB 2: GUEST PASSES
            =================================================================== */}
         {activeTab === "guests" && (
           <View style={styles.sectionSpace}>
@@ -424,7 +452,6 @@ export default function StaffPortalScreen() {
             ) : (
               passes.map((p) => {
                 const isCheckedIn = p.status === "CHECKED_IN";
-                const isApproved = p.status === "APPROVED";
 
                 return (
                   <View key={p.id || p.token} style={styles.itemCard}>
@@ -482,7 +509,7 @@ export default function StaffPortalScreen() {
         )}
 
         {/* ===================================================================
-            TAB 3: HOUSE HELPS & MAIDS (EXACT WEB CLONE)
+            TAB 3: HOUSE HELPS & MAIDS (WITH PHOTO/DOCUMENT UPLOADS)
            =================================================================== */}
         {activeTab === "house_helps" && (
           <View style={styles.sectionSpace}>
@@ -519,7 +546,6 @@ export default function StaffPortalScreen() {
             ) : (
               helps.map((h) => {
                 const isActive = h.isActive !== false;
-                const isApproved = h.status === "APPROVED";
 
                 return (
                   <View key={h.id || h.token} style={styles.itemCard}>
@@ -550,11 +576,15 @@ export default function StaffPortalScreen() {
                     </View>
 
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginTop: 4 }}>
-                      <View style={styles.helpAvatar}>
-                        <Text style={styles.helpAvatarText}>
-                          {(h.name || "H").slice(0, 2).toUpperCase()}
-                        </Text>
-                      </View>
+                      {h.photoUrl ? (
+                        <Image source={{ uri: h.photoUrl }} style={styles.helpAvatarImg} />
+                      ) : (
+                        <View style={styles.helpAvatar}>
+                          <Text style={styles.helpAvatarText}>
+                            {(h.name || "H").slice(0, 2).toUpperCase()}
+                          </Text>
+                        </View>
+                      )}
                       <View style={{ flex: 1 }}>
                         <Text style={styles.itemName}>{h.name}</Text>
                         <Text style={styles.itemPhone}>📞 +91 {h.phone}</Text>
@@ -568,6 +598,9 @@ export default function StaffPortalScreen() {
                           🪪 {h.idProofType || "AADHAAR"}: {h.idProofNumber}
                         </Text>
                       ) : null}
+                      {h.idProofDocUrl && (
+                        <Text style={{ fontSize: 10, color: "#34d399" }}>✓ ID Proof Scan Attached</Text>
+                      )}
                       {h.workShift ? (
                         <Text style={styles.helpShiftLine}>⏰ Shift: {h.workShift}</Text>
                       ) : null}
@@ -635,7 +668,7 @@ export default function StaffPortalScreen() {
         )}
 
         {/* ===================================================================
-            TAB 4: SECURITY NOTICES (EXACT WEB CLONE)
+            TAB 4: SECURITY NOTICES
            =================================================================== */}
         {activeTab === "notices" && (
           <View style={styles.sectionSpace}>
@@ -670,10 +703,6 @@ export default function StaffPortalScreen() {
         )}
       </ScrollView>
 
-      {/* ===================================================================
-          MODALS: ADD CAR, CREATE PASS, ADD HELP, QR MODALS
-         =================================================================== */}
-
       {/* 1. ADD VEHICLE MODAL */}
       <AddVehicleModal
         visible={showAddCarModal}
@@ -695,7 +724,7 @@ export default function StaffPortalScreen() {
         }}
       />
 
-      {/* 3. ADD HOUSE HELP MODAL */}
+      {/* 3. ADD HOUSE HELP MODAL (WITH UPLOADS & DROPDOWNS) */}
       <AddHouseHelpModal
         visible={showAddHelpModal}
         onClose={() => setShowAddHelpModal(false)}
@@ -799,7 +828,7 @@ export default function StaffPortalScreen() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Sub-Modals
+// Sub-Modals with Document Uploads & Custom Dropdowns
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AddVehicleModal({
@@ -814,7 +843,27 @@ function AddVehicleModal({
   const [plate, setPlate] = useState("");
   const [model, setModel] = useState("");
   const [color, setColor] = useState("green");
+  const [vehicleType, setVehicleType] = useState("CAR");
+  const [rcDocUrl, setRcDocUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const pickRCDocument = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        const uri = result.assets[0].uri;
+        setRcDocUrl(uri);
+      }
+    } catch {
+      Alert.alert("Permission Needed", "Please grant photo library access to upload documents.");
+    }
+  };
 
   const handleSubmit = async () => {
     if (!plate.trim()) {
@@ -827,15 +876,17 @@ function AddVehicleModal({
         plateNumber: plate.toUpperCase().trim(),
         modelName: model.trim() || undefined,
         stickerColor: color,
-        vehicleType: "CAR",
+        vehicleType,
       });
-      onSaved(res.car || { id: `car_${Date.now()}`, plateNumber: plate.toUpperCase().trim(), modelName: model, stickerColor: color });
+      onSaved(res.car || { id: `car_${Date.now()}`, plateNumber: plate.toUpperCase().trim(), modelName: model, stickerColor: color, vehicleType, rcDocUrl });
       setPlate("");
       setModel("");
+      setRcDocUrl(null);
     } catch {
-      onSaved({ id: `car_${Date.now()}`, plateNumber: plate.toUpperCase().trim(), modelName: model, stickerColor: color });
+      onSaved({ id: `car_${Date.now()}`, plateNumber: plate.toUpperCase().trim(), modelName: model, stickerColor: color, vehicleType, rcDocUrl });
       setPlate("");
       setModel("");
+      setRcDocUrl(null);
     } finally {
       setSaving(false);
     }
@@ -852,47 +903,84 @@ function AddVehicleModal({
             </TouchableOpacity>
           </View>
 
-          <Text style={modalStyles.label}>License Plate (e.g. PB11BH8820) *</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="PB11BH8820"
-            placeholderTextColor="#64748b"
-            autoCapitalize="characters"
-            value={plate}
-            onChangeText={(t) => setPlate(t.toUpperCase())}
-          />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <Text style={modalStyles.label}>Vehicle Type</Text>
+            <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
+              {VEHICLE_TYPES.map((v) => (
+                <TouchableOpacity
+                  key={v.id}
+                  style={[
+                    modalStyles.tierBtn,
+                    vehicleType === v.id && modalStyles.tierBtnActive,
+                  ]}
+                  onPress={() => setVehicleType(v.id)}
+                >
+                  <Text style={{ fontSize: 12 }}>{v.icon}</Text>
+                  <Text style={[modalStyles.tierText, vehicleType === v.id && modalStyles.tierTextActive]}>
+                    {v.label.split(" ")[0]}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
-          <Text style={modalStyles.label}>Model &amp; Color</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="Honda City (White)"
-            placeholderTextColor="#64748b"
-            value={model}
-            onChangeText={setModel}
-          />
+            <Text style={modalStyles.label}>License Plate (e.g. PB11BH8820) *</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="PB11BH8820"
+              placeholderTextColor="#64748b"
+              autoCapitalize="characters"
+              value={plate}
+              onChangeText={(t) => setPlate(t.toUpperCase())}
+            />
 
-          <Text style={modalStyles.label}>Sticker Tier</Text>
-          <View style={modalStyles.tierRow}>
-            {["green", "blue", "red"].map((c) => (
-              <TouchableOpacity
-                key={c}
-                style={[modalStyles.tierBtn, color === c && modalStyles.tierBtnActive]}
-                onPress={() => setColor(c)}
-              >
-                <Text style={[modalStyles.tierText, color === c && modalStyles.tierTextActive]}>
-                  {c.toUpperCase()}
-                </Text>
+            <Text style={modalStyles.label}>Model &amp; Color</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="Honda City (White)"
+              placeholderTextColor="#64748b"
+              value={model}
+              onChangeText={setModel}
+            />
+
+            <Text style={modalStyles.label}>Sticker Tier</Text>
+            <View style={modalStyles.tierRow}>
+              {["green", "blue", "red"].map((c) => (
+                <TouchableOpacity
+                  key={c}
+                  style={[modalStyles.tierBtn, color === c && modalStyles.tierBtnActive]}
+                  onPress={() => setColor(c)}
+                >
+                  <Text style={[modalStyles.tierText, color === c && modalStyles.tierTextActive]}>
+                    {c.toUpperCase()}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Document Upload */}
+            <Text style={modalStyles.label}>Vehicle RC Document (Optional)</Text>
+            {rcDocUrl ? (
+              <View style={modalStyles.uploadPreviewBox}>
+                <Image source={{ uri: rcDocUrl }} style={modalStyles.uploadThumb} />
+                <Text style={modalStyles.uploadAttachedText}>✓ RC Attached</Text>
+                <TouchableOpacity onPress={() => setRcDocUrl(null)} style={{ marginLeft: "auto" }}>
+                  <Text style={{ color: "#f87171", fontSize: 12, fontWeight: "bold" }}>✕</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={modalStyles.uploadBtn} onPress={pickRCDocument}>
+                <Text style={modalStyles.uploadBtnText}>📄 Upload RC Scan</Text>
               </TouchableOpacity>
-            ))}
-          </View>
+            )}
 
-          <TouchableOpacity
-            style={modalStyles.submitBtn}
-            onPress={handleSubmit}
-            disabled={saving}
-          >
-            {saving ? <ActivityIndicator color="#ffffff" /> : <Text style={modalStyles.submitBtnText}>Save Vehicle</Text>}
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={modalStyles.submitBtn}
+              onPress={handleSubmit}
+              disabled={saving}
+            >
+              {saving ? <ActivityIndicator color="#ffffff" /> : <Text style={modalStyles.submitBtnText}>Save Vehicle</Text>}
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -911,6 +999,7 @@ function CreateGuestPassModal({
   const [guestName, setGuestName] = useState("");
   const [guestPhone, setGuestPhone] = useState("");
   const [purpose, setPurpose] = useState("Academic Guest / Faculty Visit");
+  const [visitType, setVisitType] = useState<"OFFICIAL" | "PERSONAL">("OFFICIAL");
   const [vehicleNumber, setVehicleNumber] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -962,51 +1051,87 @@ function CreateGuestPassModal({
             </TouchableOpacity>
           </View>
 
-          <Text style={modalStyles.label}>Guest Full Name *</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="e.g. Dr. Arvind Subramanian"
-            placeholderTextColor="#64748b"
-            value={guestName}
-            onChangeText={setGuestName}
-          />
+          <ScrollView showsVerticalScrollIndicator={false}>
+            {/* Category Toggle */}
+            <Text style={modalStyles.label}>Purpose Category</Text>
+            <View style={{ flexDirection: "row", gap: 6, marginBottom: 8 }}>
+              <TouchableOpacity
+                style={[
+                  modalStyles.tierBtn,
+                  visitType === "OFFICIAL" && modalStyles.tierBtnActive,
+                ]}
+                onPress={() => {
+                  setVisitType("OFFICIAL");
+                  setPurpose("Official Academic Meeting");
+                }}
+              >
+                <Text style={[modalStyles.tierText, visitType === "OFFICIAL" && modalStyles.tierTextActive]}>
+                  Official / Academic
+                </Text>
+              </TouchableOpacity>
 
-          <Text style={modalStyles.label}>Mobile Number (10 Digits, Optional)</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="e.g. 9876543210"
-            placeholderTextColor="#64748b"
-            keyboardType="phone-pad"
-            value={guestPhone}
-            onChangeText={setGuestPhone}
-          />
+              <TouchableOpacity
+                style={[
+                  modalStyles.tierBtn,
+                  visitType === "PERSONAL" && modalStyles.tierBtnActive,
+                ]}
+                onPress={() => {
+                  setVisitType("PERSONAL");
+                  setPurpose("Personal Guest / Relative Visit");
+                }}
+              >
+                <Text style={[modalStyles.tierText, visitType === "PERSONAL" && modalStyles.tierTextActive]}>
+                  Personal / Relative
+                </Text>
+              </TouchableOpacity>
+            </View>
 
-          <Text style={modalStyles.label}>Purpose of Visit</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="e.g. Academic Reviewer"
-            placeholderTextColor="#64748b"
-            value={purpose}
-            onChangeText={setPurpose}
-          />
+            <Text style={modalStyles.label}>Guest Full Name *</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="e.g. Dr. Arvind Subramanian"
+              placeholderTextColor="#64748b"
+              value={guestName}
+              onChangeText={setGuestName}
+            />
 
-          <Text style={modalStyles.label}>Vehicle License Plate (Optional)</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="e.g. PB11BH8820"
-            placeholderTextColor="#64748b"
-            autoCapitalize="characters"
-            value={vehicleNumber}
-            onChangeText={setVehicleNumber}
-          />
+            <Text style={modalStyles.label}>Mobile Number (10 Digits, Optional)</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="e.g. 9876543210"
+              placeholderTextColor="#64748b"
+              keyboardType="phone-pad"
+              value={guestPhone}
+              onChangeText={setGuestPhone}
+            />
 
-          <TouchableOpacity
-            style={modalStyles.submitBtn}
-            onPress={handleSubmit}
-            disabled={saving}
-          >
-            {saving ? <ActivityIndicator color="#ffffff" /> : <Text style={modalStyles.submitBtnText}>Issue Gate Pass</Text>}
-          </TouchableOpacity>
+            <Text style={modalStyles.label}>Purpose Description</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="e.g. External Reviewer Meeting"
+              placeholderTextColor="#64748b"
+              value={purpose}
+              onChangeText={setPurpose}
+            />
+
+            <Text style={modalStyles.label}>Vehicle License Plate (Optional)</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="e.g. PB11BH8820"
+              placeholderTextColor="#64748b"
+              autoCapitalize="characters"
+              value={vehicleNumber}
+              onChangeText={setVehicleNumber}
+            />
+
+            <TouchableOpacity
+              style={modalStyles.submitBtn}
+              onPress={handleSubmit}
+              disabled={saving}
+            >
+              {saving ? <ActivityIndicator color="#ffffff" /> : <Text style={modalStyles.submitBtnText}>Issue Gate Pass</Text>}
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -1026,8 +1151,46 @@ function AddHouseHelpModal({
   const [name, setName] = useState("");
   const [serviceType, setServiceType] = useState("MAID");
   const [quarterNumber, setQuarterNumber] = useState("Faculty Residence B-104");
+  const [workShift, setWorkShift] = useState("Morning (07:00 - 11:00)");
+  const [idProofType, setIdProofType] = useState("AADHAAR");
   const [idProofNumber, setIdProofNumber] = useState("");
+  const [idProofDocUrl, setIdProofDocUrl] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const pickDocument = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setIdProofDocUrl(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert("Permission Needed", "Please grant photo library access to upload ID scan.");
+    }
+  };
+
+  const pickPhoto = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0]) {
+        setPhotoUrl(result.assets[0].uri);
+      }
+    } catch {
+      Alert.alert("Permission Needed", "Please grant photo library access to upload helper selfie.");
+    }
+  };
 
   const handleSubmit = async () => {
     if (!phone.trim()) {
@@ -1042,8 +1205,11 @@ function AddHouseHelpModal({
       phone: clean,
       serviceType,
       quarterNumber,
-      idProofType: "AADHAAR",
+      workShift,
+      idProofType,
       idProofNumber: idProofNumber.trim() || undefined,
+      idProofDocUrl: idProofDocUrl || undefined,
+      photoUrl: photoUrl || undefined,
       isActive: true,
       status: "APPROVED",
     };
@@ -1061,68 +1227,144 @@ function AddHouseHelpModal({
             </TouchableOpacity>
           </View>
 
-          <View style={modalStyles.autoLinkBanner}>
-            <Text style={modalStyles.autoLinkTitle}>⚡ 10-Digit Mobile Auto-Link</Text>
-            <Text style={modalStyles.autoLinkDesc}>
-              Entering an existing campus mobile links clearance immediately!
-            </Text>
-          </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+            <View style={modalStyles.autoLinkBanner}>
+              <Text style={modalStyles.autoLinkTitle}>⚡ 10-Digit Mobile Auto-Link</Text>
+              <Text style={modalStyles.autoLinkDesc}>
+                Entering an existing campus mobile links clearance immediately!
+              </Text>
+            </View>
 
-          <Text style={modalStyles.label}>Helper Mobile (10 Digits) *</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="e.g. 9876500111"
-            placeholderTextColor="#64748b"
-            keyboardType="phone-pad"
-            maxLength={10}
-            value={phone}
-            onChangeText={setPhone}
-          />
+            <Text style={modalStyles.label}>Helper Mobile (10 Digits) *</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="e.g. 9876500111"
+              placeholderTextColor="#64748b"
+              keyboardType="phone-pad"
+              maxLength={10}
+              value={phone}
+              onChangeText={setPhone}
+            />
 
-          <Text style={modalStyles.label}>Helper Full Name *</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="e.g. Sunita Devi"
-            placeholderTextColor="#64748b"
-            value={name}
-            onChangeText={setName}
-          />
+            <Text style={modalStyles.label}>Helper Full Name *</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="e.g. Sunita Devi"
+              placeholderTextColor="#64748b"
+              value={name}
+              onChangeText={setName}
+            />
 
-          <Text style={modalStyles.label}>Service Category</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="MAID, COOK, DRIVER"
-            placeholderTextColor="#64748b"
-            autoCapitalize="characters"
-            value={serviceType}
-            onChangeText={setServiceType}
-          />
+            {/* Service Category Dropdown Buttons */}
+            <Text style={modalStyles.label}>Service Category</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {SERVICE_CATEGORIES.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      modalStyles.tierBtn,
+                      serviceType === cat.id && modalStyles.tierBtnActive,
+                      { paddingHorizontal: 10 },
+                    ]}
+                    onPress={() => setServiceType(cat.id)}
+                  >
+                    <Text style={{ fontSize: 11 }}>{cat.icon}</Text>
+                    <Text style={[modalStyles.tierText, serviceType === cat.id && modalStyles.tierTextActive]}>
+                      {cat.label.split(" ")[0]}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
 
-          <Text style={modalStyles.label}>Your Quarter / House</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="e.g. Quarter 14B"
-            placeholderTextColor="#64748b"
-            value={quarterNumber}
-            onChangeText={setQuarterNumber}
-          />
+            <Text style={modalStyles.label}>Your Quarter / House</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="e.g. Quarter 14B"
+              placeholderTextColor="#64748b"
+              value={quarterNumber}
+              onChangeText={setQuarterNumber}
+            />
 
-          <Text style={modalStyles.label}>Aadhaar / Govt ID Proof Number</Text>
-          <TextInput
-            style={modalStyles.input}
-            placeholder="e.g. 9102-8812-4410"
-            placeholderTextColor="#64748b"
-            value={idProofNumber}
-            onChangeText={setIdProofNumber}
-          />
+            {/* ID Proof Type Selector */}
+            <Text style={modalStyles.label}>Government ID Proof Type</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+              <View style={{ flexDirection: "row", gap: 6 }}>
+                {ID_PROOF_TYPES.map((idType) => (
+                  <TouchableOpacity
+                    key={idType.id}
+                    style={[
+                      modalStyles.tierBtn,
+                      idProofType === idType.id && modalStyles.tierBtnActive,
+                      { paddingHorizontal: 10 },
+                    ]}
+                    onPress={() => setIdProofType(idType.id)}
+                  >
+                    <Text style={[modalStyles.tierText, idProofType === idType.id && modalStyles.tierTextActive]}>
+                      {idType.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
 
-          <TouchableOpacity
-            style={[modalStyles.submitBtn, { backgroundColor: "#8b5cf6" }]}
-            onPress={handleSubmit}
-            disabled={saving}
-          >
-            <Text style={modalStyles.submitBtnText}>Submit Staff Clearance</Text>
-          </TouchableOpacity>
+            <Text style={modalStyles.label}>ID Proof Number</Text>
+            <TextInput
+              style={modalStyles.input}
+              placeholder="e.g. 9102-8812-4410"
+              placeholderTextColor="#64748b"
+              value={idProofNumber}
+              onChangeText={setIdProofNumber}
+            />
+
+            {/* Document and Face Photo Uploads */}
+            <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+              {/* ID Scan */}
+              <View style={{ flex: 1 }}>
+                <Text style={modalStyles.label}>Aadhaar/ID Scan</Text>
+                {idProofDocUrl ? (
+                  <View style={modalStyles.uploadPreviewBox}>
+                    <Image source={{ uri: idProofDocUrl }} style={modalStyles.uploadThumb} />
+                    <Text style={modalStyles.uploadAttachedText}>✓ Attached</Text>
+                    <TouchableOpacity onPress={() => setIdProofDocUrl(null)} style={{ marginLeft: "auto" }}>
+                      <Text style={{ color: "#f87171", fontSize: 12, fontWeight: "bold" }}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={modalStyles.uploadBtn} onPress={pickDocument}>
+                    <Text style={modalStyles.uploadBtnText}>📄 Upload ID</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* Face Photo */}
+              <View style={{ flex: 1 }}>
+                <Text style={modalStyles.label}>Helper Photo</Text>
+                {photoUrl ? (
+                  <View style={modalStyles.uploadPreviewBox}>
+                    <Image source={{ uri: photoUrl }} style={modalStyles.uploadThumb} />
+                    <Text style={modalStyles.uploadAttachedText}>✓ Attached</Text>
+                    <TouchableOpacity onPress={() => setPhotoUrl(null)} style={{ marginLeft: "auto" }}>
+                      <Text style={{ color: "#f87171", fontSize: 12, fontWeight: "bold" }}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity style={modalStyles.uploadBtn} onPress={pickPhoto}>
+                    <Text style={modalStyles.uploadBtnText}>📷 Upload Selfie</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[modalStyles.submitBtn, { backgroundColor: "#8b5cf6" }]}
+              onPress={handleSubmit}
+              disabled={saving}
+            >
+              <Text style={modalStyles.submitBtnText}>Submit Staff Clearance</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -1486,16 +1728,23 @@ const styles = StyleSheet.create({
   },
   itemActionBtnText: { color: "#f8fafc", fontSize: 10, fontWeight: "700" },
   helpAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: "rgba(139, 92, 246, 0.15)",
     borderWidth: 1,
     borderColor: "rgba(139, 92, 246, 0.3)",
     alignItems: "center",
     justifyContent: "center",
   },
-  helpAvatarText: { color: "#c084fc", fontSize: 12, fontWeight: "900" },
+  helpAvatarImg: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#8b5cf6",
+  },
+  helpAvatarText: { color: "#c084fc", fontSize: 13, fontWeight: "900" },
   helpDetailsSubBox: { marginTop: 8, paddingTop: 6, borderTopWidth: 1, borderTopColor: "rgba(30, 41, 59, 0.6)", gap: 2 },
   helpDetailLine: { fontSize: 11, color: "#cbd5e1" },
   helpIdLine: { fontSize: 10, color: "#34d399", fontWeight: "700" },
@@ -1539,7 +1788,7 @@ const styles = StyleSheet.create({
 
 const modalStyles = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", padding: 20 },
-  card: { backgroundColor: "#0f172a", borderRadius: 22, padding: 18, borderWidth: 1, borderColor: "#1e293b" },
+  card: { backgroundColor: "#0f172a", borderRadius: 22, padding: 18, borderWidth: 1, borderColor: "#1e293b", maxHeight: "90%" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   title: { fontSize: 16, fontWeight: "900", color: "#ffffff" },
   closeIcon: { fontSize: 16, color: "#94a3b8", padding: 4 },
@@ -1555,7 +1804,19 @@ const modalStyles = StyleSheet.create({
     fontSize: 12,
   },
   tierRow: { flexDirection: "row", gap: 6 },
-  tierBtn: { flex: 1, backgroundColor: "#020617", borderWidth: 1, borderColor: "#334155", paddingVertical: 6, borderRadius: 8, alignItems: "center" },
+  tierBtn: {
+    flex: 1,
+    backgroundColor: "#020617",
+    borderWidth: 1,
+    borderColor: "#334155",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 4,
+  },
   tierBtnActive: { backgroundColor: "#312e81", borderColor: "#6366f1" },
   tierText: { color: "#94a3b8", fontSize: 10, fontWeight: "700" },
   tierTextActive: { color: "#ffffff" },
@@ -1565,6 +1826,7 @@ const modalStyles = StyleSheet.create({
     paddingVertical: 12,
     alignItems: "center",
     marginTop: 14,
+    marginBottom: 8,
   },
   submitBtnText: { color: "#ffffff", fontSize: 12, fontWeight: "800" },
   autoLinkBanner: {
@@ -1577,6 +1839,27 @@ const modalStyles = StyleSheet.create({
   },
   autoLinkTitle: { fontSize: 10, fontWeight: "800", color: "#c084fc" },
   autoLinkDesc: { fontSize: 9, color: "#cbd5e1", marginTop: 1 },
+  uploadBtn: {
+    backgroundColor: "#020617",
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderRadius: 10,
+    paddingVertical: 10,
+    alignItems: "center",
+  },
+  uploadBtnText: { color: "#818cf8", fontSize: 11, fontWeight: "700" },
+  uploadPreviewBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    backgroundColor: "#020617",
+    borderWidth: 1,
+    borderColor: "#334155",
+    borderRadius: 10,
+    padding: 6,
+  },
+  uploadThumb: { width: 34, height: 34, borderRadius: 8 },
+  uploadAttachedText: { color: "#34d399", fontSize: 10, fontWeight: "700" },
   viewfinder: { height: 160, backgroundColor: "#020617", borderRadius: 16, borderWidth: 1, borderColor: "#334155", alignItems: "center", justifyContent: "center", marginBottom: 12 },
   toastBox: { backgroundColor: "rgba(16, 185, 129, 0.15)", padding: 8, borderRadius: 8, marginBottom: 8 },
   toastText: { color: "#34d399", fontSize: 11, fontWeight: "700", textAlign: "center" },
