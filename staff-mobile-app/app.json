@@ -4,7 +4,6 @@
     "slug": "campus-staff-parking",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
       "backgroundColor": "#090d16"
@@ -14,14 +13,13 @@
       "bundleIdentifier": "edu.thapar.campuspass"
     },
     "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#090d16"
-      },
       "package": "edu.thapar.campuspass",
-      "permissions": ["CAMERA"]
+      "permissions": [
+        "CAMERA"
+      ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "bundler": "metro"
     },
     "plugins": [
       [
@@ -29,7 +27,9 @@
         {
           "cameraPermission": "Allow Campus Pass to access your camera to scan Gate QR codes."
         }
-      ]
+      ],
+      "expo-asset",
+      "expo-font"
     ]
   }
 }
