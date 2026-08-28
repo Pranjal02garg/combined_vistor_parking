@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/server/prisma";
 import { createMobileToken } from "@/lib/server/mobile-auth";
+import { loginLimiter, allow } from "@/lib/server/ratelimit";
 import { verify } from "@node-rs/argon2";
 import { ok, fail } from "@/lib/server/http";
 
@@ -7,6 +8,12 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
+    // SEC-5: throttle brute-force / credential stuffing, per client IP.
+    const ip = (req.headers.get("x-forwarded-for") || "unknown").split(",")[0].trim();
+    if (!(await allow(loginLimiter, `mobile:${ip}`))) {
+      return fail(429, "Too many attempts. Please wait a few minutes and try again.");
+    }
+
     const { email, password } = await req.json();
 
     if (!email || !password) {

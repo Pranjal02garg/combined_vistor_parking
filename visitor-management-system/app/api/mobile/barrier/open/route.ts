@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/server/prisma";
 import { getMobileUser } from "@/lib/server/mobile-auth";
+import { guardLimiter, allow } from "@/lib/server/ratelimit";
 import { ok, fail } from "@/lib/server/http";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +8,11 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   const user = await getMobileUser(req);
   if (!user) return fail(401, "Unauthorized");
+
+  // SEC-5: stop barrier-open spam, per authenticated user.
+  if (!(await allow(guardLimiter, `barrier:${user.id}`))) {
+    return fail(429, "Too many barrier requests. Please wait a moment.");
+  }
 
   if (!user.parkingEligible) {
     return fail(403, "Your campus parking permit is inactive or suspended.");

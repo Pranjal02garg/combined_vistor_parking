@@ -54,6 +54,8 @@ model User {
   parkingEligible  Boolean    @default(true)
   eligibleFrom     DateTime?
   eligibleTill     DateTime?
+  // Expo push token registered by the mobile app for this user's device.
+  pushToken        String?
   vehicles         FacultyVehicle[]
   barrierLogs      BarrierAccessLog[]
 
