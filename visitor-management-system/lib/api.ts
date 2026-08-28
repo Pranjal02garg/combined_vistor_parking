@@ -759,3 +759,78 @@ export function deactivateUser(id: string) {
   });
 }
 
+// ── Faculty Parking & Barrier APIs ──────────────────────────────────────────
+export interface FacultyVehicleDTO {
+  id: string;
+  plateNumber: string;
+  stickerColor: string;
+  vehicleType: string;
+  modelName: string | null;
+  isActive: boolean;
+  registeredAt?: string;
+  createdAt?: string;
+}
+
+export interface ParkingZoneDTO {
+  id: string;
+  name: string;
+  code: string;
+  zone: string;
+  totalCapacity: number;
+  occupied: number;
+  freeSlots: number;
+  occupancyPercentage: number;
+}
+
+export interface FacultyDashboardDTO {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    department?: string | null;
+    facultyId?: string | null;
+    parkingEligible: boolean;
+    eligibleTill?: string | null;
+    eligibleFrom?: string | null;
+  };
+  cars: FacultyVehicleDTO[];
+  lots: ParkingZoneDTO[];
+}
+
+export function fetchFacultyDashboard() {
+  return request<FacultyDashboardDTO>("/api/faculty/dashboard");
+}
+
+export function registerFacultyVehicle(body: {
+  plateNumber: string;
+  stickerColor: string;
+  vehicleType: string;
+  modelName?: string;
+}) {
+  return request<{ vehicle: FacultyVehicleDTO; message: string }>("/api/faculty/vehicles", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export function deleteFacultyVehicle(id: string) {
+  return request<{ success: boolean; message: string }>(`/api/faculty/vehicles/${id}`, {
+    method: "DELETE",
+  });
+}
+
+export function openFacultyBarrier(gateCode?: string, vehiclePlate?: string) {
+  return request<{ success: boolean; message: string; gate: string }>("/api/faculty/barrier/open", {
+    method: "POST",
+    body: JSON.stringify({ gateCode, vehiclePlate }),
+  });
+}
+
+export function scanFacultyGateQR(qrPayload: string) {
+  return request<{ success: boolean; message: string; gateName: string }>("/api/faculty/barrier/scan-qr", {
+    method: "POST",
+    body: JSON.stringify({ qrPayload }),
+  });
+}
+
+
