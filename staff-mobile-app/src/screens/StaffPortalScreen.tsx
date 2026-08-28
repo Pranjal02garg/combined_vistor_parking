@@ -16,6 +16,7 @@ import {
   SafeAreaView,
   Image,
 } from "react-native";
+import QRCode from "react-native-qrcode-svg";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../services/api";
@@ -388,7 +389,7 @@ export default function StaffPortalScreen() {
                             {car.stickerColor.toUpperCase()} TIER
                           </Text>
                         </View>
-                        <Text style={styles.viewBadgeHint}>View QR Badge ➔</Text>
+                        <Text style={styles.viewBadgeHint}>▦ View QR Badge ➔</Text>
                       </View>
                     </TouchableOpacity>
                   );
@@ -494,7 +495,7 @@ export default function StaffPortalScreen() {
                         style={styles.itemActionBtn}
                         onPress={() => setSelectedPassQR(p)}
                       >
-                        <Text style={styles.itemActionBtnText}>View QR Pass</Text>
+                        <Text style={styles.itemActionBtnText}>▦ View QR Pass</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -605,7 +606,7 @@ export default function StaffPortalScreen() {
                         style={styles.masterQRBtn}
                         onPress={() => setSelectedHelpQR(h)}
                       >
-                        <Text style={styles.masterQRBtnText}>Master QR Pass</Text>
+                        <Text style={styles.masterQRBtnText}>▦ Master QR Pass</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -740,6 +741,7 @@ export default function StaffPortalScreen() {
           title="Vehicle Security Badge"
           sub="THAPAR UNIVERSITY VEHICLE BADGE"
           token={selectedVehicleQR.plateNumber}
+          qrValue={`https://campus.thapar.edu/vehicle/${selectedVehicleQR.plateNumber}`}
           icon="🚗"
           meta={[
             { label: "Model", value: selectedVehicleQR.modelName || selectedVehicleQR.vehicleType },
@@ -759,6 +761,7 @@ export default function StaffPortalScreen() {
           title="Digital Guest Pass"
           sub="THAPAR GATE CLEARANCE"
           token={selectedPassQR.token}
+          qrValue={`https://campus.thapar.edu/pass/${selectedPassQR.token}`}
           icon="🎟️"
           meta={[
             { label: "Guest", value: selectedPassQR.guestName },
@@ -791,6 +794,7 @@ export default function StaffPortalScreen() {
           title="Master Security Pass"
           sub="PERMANENT DOMESTIC STAFF CLEARANCE"
           token={selectedHelpQR.token}
+          qrValue={`https://campus.thapar.edu/pass/${selectedHelpQR.token}`}
           icon="🧹"
           meta={[
             { label: "Name", value: selectedHelpQR.name },
@@ -1417,6 +1421,7 @@ function WhiteQRModal({
   title,
   sub,
   token,
+  qrValue,
   icon,
   meta,
   onClose,
@@ -1427,12 +1432,15 @@ function WhiteQRModal({
   title: string;
   sub: string;
   token: string;
+  qrValue?: string;
   icon: string;
   meta: { label: string; value: string }[];
   onClose: () => void;
   onWhatsApp: () => void;
   onShare: () => void;
 }) {
+  const finalQRData = qrValue || `https://campus.thapar.edu/pass/${token}`;
+
   return (
     <Modal visible={visible} animationType="fade" transparent>
       <View style={modalStyles.overlay}>
@@ -1444,8 +1452,15 @@ function WhiteQRModal({
           <Text style={modalStyles.whiteCrestSub}>{sub}</Text>
           <Text style={modalStyles.whiteTitle}>{title}</Text>
 
+          {/* Genuine 2D Vector Scannable QR Matrix */}
           <View style={modalStyles.qrBox}>
-            <Text style={{ fontSize: 32 }}>{icon}</Text>
+            <QRCode
+              value={finalQRData}
+              size={180}
+              color="#0f172a"
+              backgroundColor="#ffffff"
+              quietZone={10}
+            />
             <Text style={modalStyles.qrCodeBigMono}>{token}</Text>
           </View>
 
@@ -1645,7 +1660,7 @@ const styles = StyleSheet.create({
   carModelText: { color: "#94a3b8", fontSize: 10, marginTop: 1 },
   stickerBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6, borderWidth: 1 },
   stickerBadgeText: { fontSize: 9, fontWeight: "800" },
-  viewBadgeHint: { color: "#64748b", fontSize: 9, marginTop: 2 },
+  viewBadgeHint: { color: "#818cf8", fontSize: 10, fontWeight: "700", marginTop: 2 },
   scannerPromptCard: {
     backgroundColor: "#0f172a",
     borderRadius: 18,
@@ -1712,12 +1727,12 @@ const styles = StyleSheet.create({
   itemActionBtn: {
     backgroundColor: "#1e293b",
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#334155",
+    borderColor: "#4338ca",
   },
-  itemActionBtnText: { color: "#f8fafc", fontSize: 10, fontWeight: "700" },
+  itemActionBtnText: { color: "#a5b4fc", fontSize: 10, fontWeight: "800" },
   helpAvatar: {
     width: 40,
     height: 40,
@@ -1740,8 +1755,8 @@ const styles = StyleSheet.create({
   helpDetailLine: { fontSize: 11, color: "#cbd5e1" },
   helpIdLine: { fontSize: 10, color: "#34d399", fontWeight: "700" },
   helpShiftLine: { fontSize: 10, color: "#94a3b8" },
-  masterQRBtn: { backgroundColor: "#1e293b", paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8 },
-  masterQRBtnText: { color: "#f8fafc", fontSize: 10, fontWeight: "700" },
+  masterQRBtn: { backgroundColor: "#1e1b4b", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: "#4338ca" },
+  masterQRBtnText: { color: "#a5b4fc", fontSize: 10, fontWeight: "800" },
   toggleActiveBtn: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, borderWidth: 1 },
   toggleActiveText: { fontSize: 10, fontWeight: "800" },
   trashBtn: { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 8, backgroundColor: "#1e293b" },
@@ -1778,7 +1793,7 @@ const styles = StyleSheet.create({
 });
 
 const modalStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", padding: 20 },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.85)", justifyContent: "center", padding: 20 },
   card: { backgroundColor: "#0f172a", borderRadius: 22, padding: 18, borderWidth: 1, borderColor: "#1e293b", maxHeight: "90%" },
   header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
   title: { fontSize: 16, fontWeight: "900", color: "#ffffff" },
@@ -1863,31 +1878,36 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.25,
     shadowRadius: 16,
-    elevation: 8,
+    elevation: 10,
   },
   whiteCloseBtn: { position: "absolute", top: 14, right: 14, width: 28, height: 28, borderRadius: 14, backgroundColor: "#f1f5f9", alignItems: "center", justifyContent: "center" },
   whiteCloseText: { fontSize: 12, color: "#64748b", fontWeight: "bold" },
   whiteCrestSub: { fontSize: 8, fontWeight: "900", color: "#64748b", letterSpacing: 0.5 },
-  whiteTitle: { fontSize: 16, fontWeight: "900", color: "#0f172a", marginTop: 2, marginBottom: 10 },
+  whiteTitle: { fontSize: 16, fontWeight: "900", color: "#0f172a", marginTop: 2, marginBottom: 12 },
   qrBox: {
-    backgroundColor: "#f8fafc",
+    backgroundColor: "#ffffff",
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: "#e2e8f0",
     alignItems: "center",
     width: "100%",
-    marginBottom: 10,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  qrCodeBigMono: { fontSize: 14, fontWeight: "900", color: "#4338ca", marginTop: 4, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" },
+  qrCodeBigMono: { fontSize: 15, fontWeight: "900", color: "#4338ca", marginTop: 10, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace", letterSpacing: 0.5 },
   metaContainer: { width: "100%", backgroundColor: "#f8fafc", padding: 10, borderRadius: 12, borderWidth: 1, borderColor: "#e2e8f0", marginBottom: 12 },
   metaLineRow: { fontSize: 11, color: "#334155", marginBottom: 2 },
   metaLineLabel: { fontWeight: "700", color: "#64748b" },
   metaLineVal: { fontWeight: "800", color: "#0f172a" },
-  waBtn: { flex: 1, backgroundColor: "#059669", paddingVertical: 10, borderRadius: 12, alignItems: "center" },
+  waBtn: { flex: 1, backgroundColor: "#059669", paddingVertical: 11, borderRadius: 12, alignItems: "center" },
   waBtnText: { color: "#ffffff", fontSize: 11, fontWeight: "800" },
-  shareBtn: { flex: 1, backgroundColor: "#0f172a", paddingVertical: 10, borderRadius: 12, alignItems: "center" },
+  shareBtn: { flex: 1, backgroundColor: "#0f172a", paddingVertical: 11, borderRadius: 12, alignItems: "center" },
   shareBtnText: { color: "#ffffff", fontSize: 11, fontWeight: "800" },
 });
