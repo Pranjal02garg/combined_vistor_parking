@@ -239,11 +239,11 @@ function Console() {
       lastBroadcastRef.current = broadcast.message;
       setDismissedBroadcastMsg(null); // Un-dismiss
       
-      // Play sound and vibrate
+      // Alert the guard: haptics + the synthesized Web Audio alert. Uses the
+      // existing generator rather than an mp3 asset, so it works offline.
       try {
         if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
-        const audio = new Audio("/notify.mp3"); // Assuming standard notification sound exists or browser beep
-        audio.play().catch(() => {});
+        playGuardSound("warning");
       } catch (e) {}
     }
   }, [broadcast?.message]);
@@ -258,8 +258,24 @@ function Console() {
       setExitOnlyMode(false);
       try {
         if ("vibrate" in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
-        const audio = new Audio("/siren.mp3"); 
-        audio.play().catch(() => {});
+        // File-free two-tone siren via Web Audio (no /siren.mp3 asset needed).
+        const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+        if (Ctx) {
+          const ctx = new Ctx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = "square";
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          const t = ctx.currentTime;
+          for (let i = 0; i < 4; i++) {
+            osc.frequency.setValueAtTime(i % 2 === 0 ? 660 : 880, t + i * 0.25);
+          }
+          osc.start();
+          osc.stop(t + 1);
+          osc.onended = () => ctx.close();
+        }
       } catch (e) {}
     }
     lastLockdownRef.current = lockdown?.active ?? false;

@@ -6,6 +6,19 @@ import { CATEGORIES } from "../lib/categories";
 // rotate/replace before any real deployment.
 const prisma = new PrismaClient();
 
+// Self-contained demo avatar. Previously these were images.unsplash.com URLs,
+// which broke the console with 404/DNS errors whenever the machine was offline
+// or on a restricted network. A data URI always renders.
+const DEMO_AVATAR =
+  "data:image/svg+xml," +
+  encodeURIComponent(
+    "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'>" +
+      "<rect width='100' height='100' fill='#f2ead9'/>" +
+      "<circle cx='50' cy='38' r='17' fill='#7a1f2b'/>" +
+      "<path d='M18 92c0-17.5 14-29 32-29s32 11.5 32 29z' fill='#7a1f2b'/>" +
+      "</svg>"
+  );
+
 // Seed the dynamic form config from the original hardcoded categories, so the
 // DB-driven intake form starts with the existing 8 categories. Idempotent.
 async function seedForms() {
@@ -239,7 +252,7 @@ async function main() {
       approvedAt: twoHoursAgo,
       idProofType: "AADHAAR",
       idProofNumber: "9102-8812-4410",
-      photoUrl: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300",
+      photoUrl: DEMO_AVATAR,
     },
   });
 
@@ -266,7 +279,7 @@ async function main() {
       approvedAt: twoHoursAgo,
       idProofType: "AADHAAR",
       idProofNumber: "4521-8890-1123",
-      photoUrl: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300",
+      photoUrl: DEMO_AVATAR,
     },
   });
 
@@ -291,7 +304,7 @@ async function main() {
       registeredById: staffUser1.id,
       idProofType: "DRIVING_LICENSE",
       idProofNumber: "PB11-2018-0091823",
-      photoUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300",
+      photoUrl: DEMO_AVATAR,
     },
   });
 
@@ -356,7 +369,7 @@ async function main() {
       entryGateId: gates[0].id,
       vehicleNumber: "PB11-CB-4521",
       phoneVerified: true,
-      selfieUrl: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300",
+      selfieUrl: DEMO_AVATAR,
       status: "PENDING",
       createdAt: fiveMinsAgo,
       details: { studentName: "Aarav Malhotra", rollNumber: "102103456", hostel: "Hostel J", purpose: "Visiting Student" },
@@ -378,7 +391,7 @@ async function main() {
       entryGateId: gates[0].id,
       vehicleNumber: "PB10-EZ-3312",
       phoneVerified: true,
-      selfieUrl: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=300",
+      selfieUrl: DEMO_AVATAR,
       status: "APPROVED",
       createdAt: twentyMinsAgo,
       approvedAt: twentyMinsAgo,
@@ -402,7 +415,7 @@ async function main() {
       entryGateId: gates[1].id,
       vehicleNumber: "PB65-AT-7822",
       phoneVerified: true,
-      selfieUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300",
+      selfieUrl: DEMO_AVATAR,
       status: "APPROVED",
       createdAt: oneHourAgo,
       approvedAt: oneHourAgo,
@@ -426,7 +439,7 @@ async function main() {
       entryGateId: gates[0].id,
       vehicleNumber: "PB11-CN-8800",
       phoneVerified: true,
-      selfieUrl: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=300",
+      selfieUrl: DEMO_AVATAR,
       status: "APPROVED",
       createdAt: threeHoursAgo,
       approvedAt: threeHoursAgo,
