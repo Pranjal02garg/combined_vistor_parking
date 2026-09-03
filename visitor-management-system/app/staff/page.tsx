@@ -126,7 +126,28 @@ function StaffConsole({ userName }: { userName: string }) {
     queryFn: fetchStaffHouseHelps,
     refetchInterval: 10_000,
   });
-  const helps = helpsQuery.data?.helps ?? [];
+  // /api/staff/house-helps returns FLAT items, but this view was written for a
+  // nested { linkId, quarterNumber, isActive, helper:{...} } shape. Map to it so
+  // the cards render. PATCH/DELETE /api/staff/house-helps/[id] key on the
+  // houseHelp id, so linkId maps to item.id.
+  const helps = (helpsQuery.data?.items ?? []).map((it: any) => ({
+    linkId: it.id,
+    quarterNumber: it.quarterNumber,
+    workShift: it.workShift,
+    isActive: it.isActive,
+    validUntil: it.validUntil,
+    status: it.status,
+    helper: {
+      id: it.id,
+      token: it.token,
+      name: it.name,
+      phone: it.phone,
+      serviceType: it.serviceType,
+      photoUrl: it.photoUrl,
+      idProofType: it.idProofType,
+      idProofNumber: it.idProofNumber,
+    },
+  }));
 
   const noticesQuery = useQuery({
     queryKey: ["incidents"],
