@@ -36,6 +36,7 @@ import {
   decideVisit,
   exitVisit,
   checkinVIPPass,
+  rejectVIPPassAtGate,
   exitVIPPass,
   actionHouseHelp,
   ApiError,
@@ -239,11 +240,11 @@ function Console() {
       lastBroadcastRef.current = broadcast.message;
       setDismissedBroadcastMsg(null); // Un-dismiss
       
-      // Play sound and vibrate
+      // Alert the guard: haptics + the synthesized Web Audio alert. Uses the
+      // existing generator rather than an mp3 asset, so it works offline.
       try {
         if ("vibrate" in navigator) navigator.vibrate([200, 100, 200]);
-        const audio = new Audio("/notify.mp3"); // Assuming standard notification sound exists or browser beep
-        audio.play().catch(() => {});
+        playGuardSound("warning");
       } catch (e) {}
     }
   }, [broadcast?.message]);
@@ -258,8 +259,24 @@ function Console() {
       setExitOnlyMode(false);
       try {
         if ("vibrate" in navigator) navigator.vibrate([500, 200, 500, 200, 500]);
-        const audio = new Audio("/siren.mp3"); 
-        audio.play().catch(() => {});
+        // File-free two-tone siren via Web Audio (no /siren.mp3 asset needed).
+        const Ctx = window.AudioContext || (window as any).webkitAudioContext;
+        if (Ctx) {
+          const ctx = new Ctx();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = "square";
+          gain.gain.setValueAtTime(0.12, ctx.currentTime);
+          const t = ctx.currentTime;
+          for (let i = 0; i < 4; i++) {
+            osc.frequency.setValueAtTime(i % 2 === 0 ? 660 : 880, t + i * 0.25);
+          }
+          osc.start();
+          osc.stop(t + 1);
+          osc.onended = () => ctx.close();
+        }
       } catch (e) {}
     }
     lastLockdownRef.current = lockdown?.active ?? false;
@@ -324,7 +341,7 @@ function Console() {
       await fn();
       qc.invalidateQueries({ queryKey: ["guard-feed"] });
     } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Action failed. Try again.");
+      alert(e instanceof Error && e.message ? e.message : "Action failed. Try again.");
     } finally {
       setBusyKey(null);
     }
@@ -352,7 +369,10 @@ function Console() {
   const onReject = (i: FeedItem) => {
     playGuardSound("warning", soundEnabled);
     return run(i.key, () => {
-      if (i.kind === "VIP" || i.category === "HOUSE_HELP") throw new Error("Cannot reject a VIP / House Help pass");
+      if (i.category === "HOUSE_HELP")
+        throw new Error("A house-help pass can't be rejected here — pause the clearance from the resident's app.");
+      if (i.kind === "VIP")
+        return rejectVIPPassAtGate(i.ref, activeGateId!, onDutyGuard || "unnamed");
       return decideVisit(i.visitId!, "reject", onDutyGuard || "unnamed");
     });
   };

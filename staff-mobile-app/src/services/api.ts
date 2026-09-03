@@ -1,8 +1,23 @@
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Automatically use current LAN IP
-export const DEV_LAN_IP = "192.168.1.8";
+// Auto-detect the dev machine's LAN IP from the Metro host so the app always
+// reaches the backend on whatever network/computer is running `expo start`.
+// Falls back to a hardcoded IP if the host can't be resolved (e.g. production).
+const FALLBACK_LAN_IP = "192.168.1.5";
+
+function resolveDevHost(): string {
+  const hostUri =
+    Constants.expoConfig?.hostUri ||
+    (Constants.expoGoConfig as any)?.debuggerHost ||
+    (Constants.manifest2 as any)?.extra?.expoGo?.debuggerHost ||
+    "";
+  const host = hostUri.split(":")[0];
+  return host || FALLBACK_LAN_IP;
+}
+
+export const DEV_LAN_IP = resolveDevHost();
 export const API_BASE_URL =
   Platform.OS === "web"
     ? "http://localhost:3000/api/mobile"
@@ -173,7 +188,9 @@ export const api = {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    // 3.5s was too aggressive: base64 photo uploads and cold routes routinely
+    // exceed it, aborting a request that would have succeeded.
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -303,33 +320,42 @@ export const api = {
     validFrom?: string;
     validUntil?: string;
   }): Promise<{ pass: any }> {
-    try {
-      return await this.request<{ pass: any }>("/vip", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    } catch {
-      return {
-        pass: {
-          id: `vip_${Date.now()}`,
-          token: `VIP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-          guestName: data.guestName,
-          guestPhone: data.guestPhone || "9876543210",
-          purpose: data.purpose || "Official Guest Visit",
-          vehicleNumber: data.vehicleNumber,
-          status: "APPROVED",
-          validFrom: data.validFrom || new Date().toISOString(),
-          validUntil: data.validUntil || new Date(Date.now() + 86400000).toISOString(),
-          createdAt: new Date().toISOString(),
-        },
-      };
-    }
+    // No local fallback: a fabricated pass with a client-side token is never
+    // saved server-side, so the guard can't find it and the admin never sees
+    // it. Let failures throw so the UI shows a real error instead of a ghost.
+    return await this.request<{ pass: any }>("/vip", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   },
 
   // House Helps
   async getHouseHelps(): Promise<{ helps: any[] }> {
     try {
-      return await this.request<{ helps: any[] }>("/house-help");
+      const res = await this.request<{ helps: any[] }>("/house-help");
+      // The API returns helper fields nested under `helper` alongside the
+      // staff-link fields. Flatten to the shape the UI reads (name, phone,
+      // serviceType, id, token, ...) so cards render and keys stay unique.
+      const helps = (res.helps || []).map((h: any) => {
+        const helper = h.helper || h;
+        return {
+          id: helper.id || h.linkId || h.id,
+          linkId: h.linkId,
+          token: helper.token,
+          name: helper.name,
+          phone: helper.phone,
+          serviceType: helper.serviceType,
+          status: helper.status,
+          photoUrl: helper.photoUrl,
+          quarterNumber: h.quarterNumber,
+          workShift: h.workShift,
+          validUntil: h.validUntil,
+          isActive: h.isActive,
+          idProofType: helper.idProofType,
+          idProofNumber: helper.idProofNumber,
+        };
+      });
+      return { helps };
     } catch {
       return { helps: DEMO_HOUSE_HELPS };
     }
@@ -346,29 +372,35 @@ export const api = {
     idProofDocUrl?: string;
     photoUrl?: string;
   }): Promise<{ help: any }> {
-    try {
-      return await this.request<{ help: any }>("/house-help", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    } catch {
-      return {
-        help: {
-          id: `hlp_${Date.now()}`,
-          token: `HLP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-          name: data.name || "Domestic Helper",
-          phone: data.phone,
-          serviceType: data.serviceType,
-          quarterNumber: data.quarterNumber || "Faculty Residence",
-          workShift: data.workShift || "General Shift",
-          idProofType: data.idProofType || "AADHAAR",
-          idProofNumber: data.idProofNumber,
-          idProofDocUrl: data.idProofDocUrl,
-          photoUrl: data.photoUrl,
-          isActive: true,
-          status: "APPROVED",
-        },
-      };
-    }
+    // No local fallback (same reason as createVIPPass): a fabricated helper is
+    // never persisted, so its Master QR fails at the gate. Surface real errors.
+    return await this.request<{ help: any }>("/house-help", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // SEC-4: persist pause/activate and validity extension server-side.
+  async updateHouseHelp(
+    id: string,
+    data: { isActive?: boolean; validUntil?: string }
+  ): Promise<{ ok: boolean; isActive?: boolean; validUntil?: string }> {
+    return await this.request(`/house-help/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    });
+  },
+
+  // SEC-4: unlink a helper from the resident's quarter server-side.
+  async unlinkHouseHelp(id: string): Promise<{ ok: boolean }> {
+    return await this.request(`/house-help/${id}`, { method: "DELETE" });
+  },
+
+  // Store this device's Expo push token so the server can notify this user.
+  async registerPushToken(pushToken: string): Promise<{ ok: boolean }> {
+    return await this.request(`/push-token`, {
+      method: "POST",
+      body: JSON.stringify({ pushToken }),
+    });
   },
 };

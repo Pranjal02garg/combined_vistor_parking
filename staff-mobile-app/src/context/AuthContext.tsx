@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { api, MobileUser } from "../services/api";
+import { registerForPushAsync } from "../services/push";
 
 interface AuthContextType {
   user: MobileUser | null;
@@ -47,6 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await api.setSession(res.token, res.user);
     setToken(res.token);
     setUser(res.user);
+    // Register this device for push (no-op in Expo Go; works in a dev build).
+    void registerForPushAsync();
   }
 
   async function logout() {

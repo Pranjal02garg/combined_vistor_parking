@@ -1,4 +1,3 @@
-import type { VisitStatus } from "@prisma/client";
 import { prisma } from "@/lib/server/prisma";
 import { getGuard } from "@/lib/server/session";
 import { guardLimiter, allow } from "@/lib/server/ratelimit";
@@ -47,29 +46,29 @@ export async function POST(req: Request) {
     return fail(403, "Lockdown is active. No new entries permitted.");
   }
 
-  // P0.8: Block duplicate active sessions
-  const activeStatuses: VisitStatus[] = ["PENDING", "APPROVED", "ESCALATED"];
-  const existingByPhone = await prisma.visitLog.findFirst({
-    where: { 
-      visitor: { phone: pass.guestPhone }, 
-      status: { in: activeStatuses }
-    },
-    select: { id: true }
-  });
-  if (existingByPhone) {
-    return fail(409, "This guest already has an active or pending regular visit");
+  // Prevent the SAME guest/vehicle from being inside on two VIP passes at once.
+  // (Previously this cross-checked the separate regular-visit table by phone/
+  //  plate, which falsely blocked a valid guest pass whenever the number
+  //  coincidentally matched an unrelated walk-in visit. The two systems are
+  //  independent; a VIP pass has its own state machine.) Blank phone/plate is
+  //  never treated as a match.
+  if (pass.guestPhone && pass.guestPhone.trim()) {
+    const dupPhone = await prisma.vIPPass.findFirst({
+      where: { guestPhone: pass.guestPhone, status: "CHECKED_IN", NOT: { token } },
+      select: { id: true },
+    });
+    if (dupPhone) {
+      return fail(409, "This guest is already inside on another pass.");
+    }
   }
 
-  if (pass.vehicleNumber) {
-    const existingByVehicle = await prisma.visitLog.findFirst({
-      where: { 
-        vehicleNumber: pass.vehicleNumber,
-        status: { in: activeStatuses }
-      },
-      select: { id: true }
+  if (pass.vehicleNumber && pass.vehicleNumber.trim()) {
+    const dupVehicle = await prisma.vIPPass.findFirst({
+      where: { vehicleNumber: pass.vehicleNumber, status: "CHECKED_IN", NOT: { token } },
+      select: { id: true },
     });
-    if (existingByVehicle) {
-      return fail(409, "This vehicle is already inside or pending entry");
+    if (dupVehicle) {
+      return fail(409, "This vehicle is already inside on another pass.");
     }
   }
 

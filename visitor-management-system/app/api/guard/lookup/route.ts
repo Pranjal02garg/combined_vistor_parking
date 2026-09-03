@@ -234,9 +234,10 @@ export async function GET(req: Request) {
     return ok({ item });
   }
 
-  // 4. Check Faculty Vehicle Allowlist
-  const vehicle = await prisma.vehicleAllowlist.findFirst({
-    where: { plateNumber: code },
+  // 4. Check Faculty Vehicle Allowlist (model is FacultyVehicle, owner via user relation)
+  const vehicle = await prisma.facultyVehicle.findFirst({
+    where: { plateNumber: code, isActive: true },
+    include: { user: { select: { name: true, phone: true, department: true } } },
   });
 
   if (vehicle) {
@@ -247,8 +248,8 @@ export async function GET(req: Request) {
       status: "APPROVED",
       visitId: vehicle.id,
       ref: vehicle.plateNumber,
-      name: vehicle.ownerName,
-      phone: vehicle.phone,
+      name: vehicle.user?.name ?? "Faculty Member",
+      phone: vehicle.user?.phone ?? "",
       vehicleNumber: vehicle.plateNumber,
       categoryLabel: `Faculty Vehicle (${vehicle.stickerColor.toUpperCase()})`,
       category: "FACULTY",
@@ -261,8 +262,8 @@ export async function GET(req: Request) {
       awaitingHead: false,
       createdAt: vehicle.createdAt.toISOString(),
       fields: [
-        { label: "Owner", value: vehicle.ownerName },
-        { label: "Department", value: vehicle.department || "Faculty" },
+        { label: "Owner", value: vehicle.user?.name ?? "Faculty Member" },
+        { label: "Department", value: vehicle.user?.department || "Faculty" },
         { label: "Permit Tier", value: `${vehicle.stickerColor.toUpperCase()} Fast-Lane` },
         { label: "Model", value: vehicle.modelName || "Registered Vehicle" },
       ],

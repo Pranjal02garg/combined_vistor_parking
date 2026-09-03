@@ -86,7 +86,9 @@ export async function POST(req: Request) {
           idProofType: idProofType || "AADHAAR",
           idProofNumber: idProofNumber || null,
           idProofDocUrl: idProofDocUrl || null,
-          status: "APPROVED",
+          // SEC-3: a brand-new helper must be vetted by HEAD before the Master
+          // QR is valid. Approval happens via /api/admin/house-helps/[id]/decision.
+          status: "PENDING_APPROVAL",
           registeredById: user.id,
         },
       });
