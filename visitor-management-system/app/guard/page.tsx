@@ -36,6 +36,7 @@ import {
   decideVisit,
   exitVisit,
   checkinVIPPass,
+  rejectVIPPassAtGate,
   exitVIPPass,
   actionHouseHelp,
   ApiError,
@@ -340,7 +341,7 @@ function Console() {
       await fn();
       qc.invalidateQueries({ queryKey: ["guard-feed"] });
     } catch (e) {
-      alert(e instanceof ApiError ? e.message : "Action failed. Try again.");
+      alert(e instanceof Error && e.message ? e.message : "Action failed. Try again.");
     } finally {
       setBusyKey(null);
     }
@@ -368,7 +369,10 @@ function Console() {
   const onReject = (i: FeedItem) => {
     playGuardSound("warning", soundEnabled);
     return run(i.key, () => {
-      if (i.kind === "VIP" || i.category === "HOUSE_HELP") throw new Error("Cannot reject a VIP / House Help pass");
+      if (i.category === "HOUSE_HELP")
+        throw new Error("A house-help pass can't be rejected here — pause the clearance from the resident's app.");
+      if (i.kind === "VIP")
+        return rejectVIPPassAtGate(i.ref, activeGateId!, onDutyGuard || "unnamed");
       return decideVisit(i.visitId!, "reject", onDutyGuard || "unnamed");
     });
   };

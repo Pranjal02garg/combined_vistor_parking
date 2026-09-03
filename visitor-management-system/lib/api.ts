@@ -218,6 +218,15 @@ export function checkinVIPPass(token: string, gateId: string, onDutyGuard?: stri
   });
 }
 
+// Guard-side gate rejection (deny a not-yet-entered guest pass). Distinct from
+// decideVIPPass, which is the HEAD approve/reject of a PENDING pass.
+export function rejectVIPPassAtGate(token: string, gateId: string, onDutyGuard?: string) {
+  return request<{ token: string; status: string }>("/api/vip/reject", {
+    method: "POST",
+    body: JSON.stringify({ token, gateId, onDutyGuard }),
+  });
+}
+
 export function exitVIPPass(token: string, gateId: string, onDutyGuard?: string) {
   return request<{ token: string; status: string }>("/api/vip/exit", {
     method: "POST",
