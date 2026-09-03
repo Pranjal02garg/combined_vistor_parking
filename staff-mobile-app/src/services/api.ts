@@ -188,7 +188,9 @@ export const api = {
     }
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3500);
+    // 3.5s was too aggressive: base64 photo uploads and cold routes routinely
+    // exceed it, aborting a request that would have succeeded.
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -318,27 +320,13 @@ export const api = {
     validFrom?: string;
     validUntil?: string;
   }): Promise<{ pass: any }> {
-    try {
-      return await this.request<{ pass: any }>("/vip", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    } catch {
-      return {
-        pass: {
-          id: `vip_${Date.now()}`,
-          token: `VIP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-          guestName: data.guestName,
-          guestPhone: data.guestPhone || "9876543210",
-          purpose: data.purpose || "Official Guest Visit",
-          vehicleNumber: data.vehicleNumber,
-          status: "APPROVED",
-          validFrom: data.validFrom || new Date().toISOString(),
-          validUntil: data.validUntil || new Date(Date.now() + 86400000).toISOString(),
-          createdAt: new Date().toISOString(),
-        },
-      };
-    }
+    // No local fallback: a fabricated pass with a client-side token is never
+    // saved server-side, so the guard can't find it and the admin never sees
+    // it. Let failures throw so the UI shows a real error instead of a ghost.
+    return await this.request<{ pass: any }>("/vip", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   },
 
   // House Helps
@@ -384,30 +372,12 @@ export const api = {
     idProofDocUrl?: string;
     photoUrl?: string;
   }): Promise<{ help: any }> {
-    try {
-      return await this.request<{ help: any }>("/house-help", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    } catch {
-      return {
-        help: {
-          id: `hlp_${Date.now()}`,
-          token: `HLP-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-          name: data.name || "Domestic Helper",
-          phone: data.phone,
-          serviceType: data.serviceType,
-          quarterNumber: data.quarterNumber || "Faculty Residence",
-          workShift: data.workShift || "General Shift",
-          idProofType: data.idProofType || "AADHAAR",
-          idProofNumber: data.idProofNumber,
-          idProofDocUrl: data.idProofDocUrl,
-          photoUrl: data.photoUrl,
-          isActive: true,
-          status: "PENDING_APPROVAL",
-        },
-      };
-    }
+    // No local fallback (same reason as createVIPPass): a fabricated helper is
+    // never persisted, so its Master QR fails at the gate. Surface real errors.
+    return await this.request<{ help: any }>("/house-help", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
   },
 
   // SEC-4: persist pause/activate and validity extension server-side.
