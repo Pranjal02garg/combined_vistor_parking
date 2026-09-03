@@ -249,7 +249,7 @@ export async function GET(req: Request) {
       visitId: vehicle.id,
       ref: vehicle.plateNumber,
       name: vehicle.user?.name ?? "Faculty Member",
-      phone: vehicle.user?.phone ?? null,
+      phone: vehicle.user?.phone ?? "",
       vehicleNumber: vehicle.plateNumber,
       categoryLabel: `Faculty Vehicle (${vehicle.stickerColor.toUpperCase()})`,
       category: "FACULTY",
